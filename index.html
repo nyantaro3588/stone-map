@@ -3,19 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>先生専用・石拾い地質＆採集マップ</title>
+  <title>先生専用・石拾い地質マップ</title>
   
+  <!-- PWA & フルスクリーン完全定義（インラインマニフェスト） -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#d84315">
+
+  <link rel="manifest" href='data:application/manifest+json,{"name":"石拾い地質マップ","short_name":"石拾いマップ","start_url":".","display":"standalone","background_color":"#ffffff","theme_color":"#d84315","icons":[{"src":"https://maps.gsi.go.jp/favicon.ico","sizes":"192x192","type":"image/png"}]}'>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
 
   <style>
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; background: #000; }
     #map { width: 100%; height: 100%; }
 
     /* 左上コンパクト情報 */
@@ -47,17 +50,21 @@
       font-size: 10px;
     }
 
-    /* 右上フローティングメニューボタン */
-    .menu-fab {
+    /* 右上ツールボタン群 */
+    .top-right-bar {
       position: absolute;
       top: 10px;
       right: 10px;
       z-index: 1000;
+      display: flex;
+      gap: 6px;
+    }
+    .action-fab {
       background: #ffffff;
       color: #333;
       border: none;
       border-radius: 20px;
-      padding: 6px 12px;
+      padding: 6px 10px;
       font-size: 12px;
       font-weight: bold;
       box-shadow: 0 2px 10px rgba(0,0,0,0.2);
@@ -84,7 +91,7 @@
       cursor: pointer;
     }
 
-    /* 下部ボトムシート（引き出し式） */
+    /* 下部ボトムシート */
     .bottom-sheet {
       position: absolute;
       bottom: 0;
@@ -102,9 +109,7 @@
       display: flex;
       flex-direction: column;
     }
-    .bottom-sheet.open {
-      max-height: 45vh;
-    }
+    .bottom-sheet.open { max-height: 45vh; }
     .sheet-header {
       padding: 10px 16px;
       display: flex;
@@ -116,12 +121,8 @@
       color: #2c3e50;
       border-bottom: 1px solid #eee;
     }
-    .sheet-content {
-      padding: 8px 12px 14px;
-      overflow-y: auto;
-    }
+    .sheet-content { padding: 8px 12px 14px; overflow-y: auto; }
 
-    /* 早見表タブ＆チップス */
     .guide-tabs { display: flex; gap: 4px; margin-bottom: 6px; }
     .tab-btn {
       flex: 1;
@@ -145,7 +146,7 @@
       border: 1px solid rgba(0,0,0,0.1);
     }
 
-    /* 共通モーダル設定 */
+    /* 共通モーダル */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -189,7 +190,6 @@
       text-align: center;
     }
 
-    /* ツールメニュー内ボタングリッド */
     .menu-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -207,11 +207,7 @@
       text-align: center;
       cursor: pointer;
     }
-    .menu-item.active {
-      background: #ffebee;
-      border-color: #e53935;
-      color: #c62828;
-    }
+    .menu-item.active { background: #ffebee; border-color: #e53935; color: #c62828; }
 
     .gallery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
     .gallery-card { border: 1px solid #eee; border-radius: 8px; overflow: hidden; background: #fafafa; cursor: pointer; }
@@ -231,10 +227,11 @@
     </div>
   </div>
 
-  <!-- 右上: メニュー開閉ボタン -->
-  <button class="menu-fab" onclick="openModal('toolsModal')">
-    ⚙️ ツール・設定
-  </button>
+  <!-- 右上: 全画面 ＆ 設定メニュー -->
+  <div class="top-right-bar">
+    <button class="action-fab" onclick="toggleFullScreen()" title="全画面表示">⛶ 全画面</button>
+    <button class="action-fab" onclick="openModal('toolsModal')">⚙️ 設定</button>
+  </div>
 
   <!-- 右下: GPSボタン -->
   <button id="gpsBtn" class="gps-btn" title="現在地を表示">📍</button>
@@ -288,7 +285,7 @@
     </div>
   </div>
 
-  <!-- モーダル: ツール＆設定一覧（メニュー） -->
+  <!-- モーダル: ツール＆設定一覧 -->
   <div class="modal-overlay" id="toolsModal">
     <div class="modal-box">
       <h3>⚙️ ツール＆設定</h3>
@@ -369,7 +366,6 @@
         <option value="high">光をよく透す（透明・半透明）</option>
         <option value="low">光をまったく透さない（不透明）</option>
       </select>
-
       <label><b>② 光沢・質感</b></label>
       <select id="diagLuster">
         <option value="glass">ガラスのようにツルツル / 飴色</option>
@@ -377,13 +373,11 @@
         <option value="rough">ツブツブ・ザラザラ</option>
         <option value="metallic">金属のようなギラギラ光沢</option>
       </select>
-
       <label><b>③ 硬さ</b></label>
       <select id="diagHard">
         <option value="hard">非常に硬い（ガラスに傷がつく）</option>
         <option value="soft">釘や硬貨で傷がつく</option>
       </select>
-
       <label><b>④ 色合い</b></label>
       <select id="diagColor">
         <option value="white">白・透明・灰色</option>
@@ -392,7 +386,6 @@
         <option value="stripe">縞模様や同心円模様</option>
         <option value="black">漆黒・濃い黒</option>
       </select>
-
       <div class="btn-row">
         <button class="btn-act" style="background:#888;" onclick="closeModal('diagModal')">閉じる</button>
         <button class="btn-act" style="background:#6a1b9a;" onclick="runDiagnosis()">判定する！</button>
@@ -405,18 +398,14 @@
   <div class="modal-overlay" id="dataModal">
     <div class="modal-box">
       <h3 style="color:#1565c0;">💾 データ管理・写真一括配置</h3>
-      
       <div style="background:#e3f2fd; padding:8px; border-radius:6px; margin-bottom:8px;">
         <b>📸 写真から一括ピン立て</b>
         <div style="font-size:10px; color:#555; margin-bottom:4px;">位置情報付き写真を選ぶだけで自動配置！</div>
         <input type="file" id="batchPhotoInput" accept="image/*" multiple onchange="batchImportPhotos(event)">
       </div>
-
       <button class="btn-act" style="background:#1565c0; width:100%; margin-bottom:6px;" onclick="exportLogs()">📤 ログをJSON保存</button>
-      
       <label><b>📥 バックアップを復元</b></label>
       <input type="file" id="importFile" accept=".json" onchange="importLogs(event)">
-
       <div class="btn-row">
         <button class="btn-act" style="background:#888;" onclick="closeModal('dataModal')">閉じる</button>
       </div>
@@ -445,10 +434,8 @@
     <div class="modal-box">
       <h3 style="color:#0097a7;">⛈️ 雨雲レーダー・河川防災</h3>
       <p style="color:#555; font-size:11px; margin:0 0 8px;">上流の雨雲状況をチェックして急な増水に備えましょう。</p>
-      
       <a href="https://www.jma.go.jp/bosai/nowc/" target="_blank" class="btn-act" style="display:block; background:#0288d1; text-decoration:none; margin-bottom:6px;">📡 気象庁 雨雲の動き ↗</a>
       <a href="https://www.river.go.jp/" target="_blank" class="btn-act" style="display:block; background:#00796b; text-decoration:none; margin-bottom:8px;">🌊 国交省 川の防災情報 ↗</a>
-
       <div class="btn-row">
         <button class="btn-act" style="background:#888;" onclick="closeModal('radarModal')">閉じる</button>
       </div>
@@ -462,7 +449,7 @@
       <div style="background:#e8f5e9; padding:8px; border-radius:6px; margin-bottom:8px; color:#2e7d32; line-height:1.4; font-size:11px;">
         <b>🌿 採集マナーとルール</b><br>
         ・自然公園法、河川法、地域の採集規制を順守してください。<br>
-        ・特別保護地区や天然記念物指定地域（糸魚川ヒスイ峡等）、私有地への無断立ち入り・採集は禁止されています。
+        ・特別保護地区や天然記念物指定地域、私有地への無断立ち入り・採集は禁止されています。
       </div>
       <div style="background:#f5f5f5; padding:8px; border-radius:6px; color:#555; line-height:1.4; font-size:10px;">
         <b>🗺️ 出典・利用データ</b><br>
@@ -479,7 +466,18 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // 1. IndexedDBキャッシュ
+    // 1. フルスクリーン切り替え関数
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    // 2. IndexedDBキャッシュ
     const tileDB = localforage.createInstance({ name: 'stone_map_offline_tiles' });
 
     const CachedTileLayer = L.TileLayer.extend({
@@ -538,7 +536,7 @@
       document.getElementById('opacityVal').innerText = Math.round(e.target.value * 100) + '%';
     });
 
-    // 2. ボトムシート開閉
+    // 3. ボトムシート開閉
     function toggleBottomSheet() {
       const sheet = document.getElementById('bottomSheet');
       const arrow = document.getElementById('sheetArrow');
@@ -594,7 +592,7 @@
       if (d) document.getElementById('guideContent').innerHTML = `<b>${d.name}</b><br>🎯 <b>狙う地質:</b> ${d.targetGeo}<br><span style="color:#455a64;">${d.tips}</span>`;
     }
 
-    // 3. EXIF解析＆写真一括
+    // 4. EXIF解析＆写真一括
     let detectedExifLatLng = null;
     function checkExifLocation(input) {
       const file = input.files[0];
@@ -668,7 +666,7 @@
       closeModal('dataModal');
     }
 
-    // 4. プライバシー保護
+    // 5. プライバシー保護
     let isPrivacy = false;
     function togglePrivacy() {
       isPrivacy = !isPrivacy;
@@ -681,7 +679,7 @@
       return isPrivacy ? (Math.floor(val) + '.' + String(Math.abs(val) % 1).slice(2, 4) + '***') : val.toFixed(4);
     }
 
-    // 5. スリープ防止
+    // 6. スリープ防止
     let wakeLock = null;
     async function toggleWakeLock() {
       if ('wakeLock' in navigator) {
@@ -700,7 +698,7 @@
       } else { alert('非対応端末です'); }
     }
 
-    // 6. コンパス・日没・潮汐
+    // 7. コンパス・日没・潮汐
     if (window.DeviceOrientationEvent) {
       window.addEventListener('deviceorientation', (e) => {
         let heading = e.webkitCompassHeading || (360 - e.alpha);
@@ -734,7 +732,7 @@
     }
     updateSunAndTide(37.4, 139.0);
 
-    // 7. 距離計測
+    // 8. 距離計測
     let isMeasuring = false;
     let measurePoints = [];
     let measureLine = L.polyline([], { color: '#0288d1', weight: 4, dashArray: '4, 4' }).addTo(map);
@@ -749,7 +747,7 @@
       closeModal('toolsModal');
     }
 
-    // 8. GPS軌跡
+    // 9. GPS軌跡
     let isTracking = false;
     let watchId = null;
     let trackLatLngs = [];
@@ -779,7 +777,7 @@
       }
     });
 
-    // 9. 採集ログ＆トレカ生成
+    // 10. 採集ログ＆トレカ生成
     const logLayer = L.layerGroup().addTo(map);
     let selectedLatLng = null;
     let currentCardIndex = null;
@@ -976,7 +974,7 @@
 
     loadLogs();
 
-    // 10. 簡易鑑定
+    // 11. 簡易鑑定
     function runDiagnosis() {
       const trans = document.getElementById('diagTrans').value;
       const luster = document.getElementById('diagLuster').value;
@@ -1000,7 +998,7 @@
       resDiv.innerHTML = '<b style="color:#6a1b9a;">🔍 候補:</b><br>' + cand.join('<br><br>');
     }
 
-    // 11. バックアップ
+    // 12. バックアップ
     function exportLogs() {
       const logs = localStorage.getItem('stone_logs') || '[]';
       const a = document.createElement('a');
@@ -1028,7 +1026,7 @@
       reader.readAsText(file);
     }
 
-    // 12. オフライン保存
+    // 13. オフライン保存
     async function updateCacheCount() {
       const keys = await tileDB.keys();
       document.getElementById('cacheStatus').innerText = `キャッシュ: ${keys.length}枚`;
@@ -1078,7 +1076,7 @@
       updateCacheCount();
     });
 
-    // 13. GPSボタン
+    // 14. GPSボタン
     document.getElementById('gpsBtn').addEventListener('click', () => {
       if (!navigator.geolocation) return alert('GPS非対応');
       navigator.geolocation.getCurrentPosition(
