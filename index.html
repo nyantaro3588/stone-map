@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>先生専用・石拾い地質＆採集マップ【極・神話版】</title>
+  <title>先生専用・石拾い地質＆採集マップ</title>
   
-  <!-- PWA & Web App 設定 -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -13,126 +12,120 @@
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
-  <!-- EXIF解析ライブラリ（写真のGPS自動読込用） -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
 
   <style>
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-user-select: none; user-select: none; }
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
     #map { width: 100%; height: 100%; }
 
-    /* 上部ツールパネル */
-    .top-panel {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 1000;
-      background: rgba(255, 255, 255, 0.96);
-      backdrop-filter: blur(8px);
-      padding: 8px 10px;
-      border-radius: 12px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.18);
-      font-size: 11px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      max-width: 175px;
-    }
-    .base-select {
-      padding: 3px 5px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 10.5px;
-      font-weight: bold;
-    }
-
-    /* ボタングループ */
-    .btn-tool {
-      background: #37474f;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 5px 6px;
-      font-size: 10px;
-      font-weight: bold;
-      cursor: pointer;
-      text-align: center;
-    }
-    .btn-tool.active { background: #e53935; }
-    .btn-privacy.active { background: #689f38; }
-    .btn-offline { background: #00897b; }
-    .btn-diag { background: #6a1b9a; }
-    .btn-gallery { background: #e65100; }
-    .btn-measure { background: #0277bd; }
-    .btn-radar { background: #0097a7; }
-    .btn-info { background: #455a64; }
-
-    /* ウィジェット（左上） */
+    /* 左上コンパクト情報 */
     .info-widget {
       position: absolute;
       top: 10px;
       left: 10px;
       z-index: 1000;
-      background: rgba(255, 255, 255, 0.94);
+      background: rgba(255, 255, 255, 0.92);
       backdrop-filter: blur(6px);
-      padding: 6px 10px;
-      border-radius: 10px;
+      padding: 4px 8px;
+      border-radius: 20px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.15);
       font-size: 10px;
       font-weight: bold;
       color: #333;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
     .compass-dial {
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
       border: 2px solid #ff5722;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
-      transition: transform 0.1s ease;
+      font-size: 10px;
     }
 
-    /* GPSボタン */
+    /* 右上フローティングメニューボタン */
+    .menu-fab {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      background: #ffffff;
+      color: #333;
+      border: none;
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: bold;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* 右下 GPSボタン */
     .gps-btn {
       position: absolute;
-      bottom: 24px;
-      right: 16px;
+      bottom: 54px;
+      right: 14px;
       z-index: 1000;
       background: #ff5722;
       color: white;
       border: none;
       border-radius: 50%;
-      width: 52px;
-      height: 52px;
-      font-size: 22px;
+      width: 48px;
+      height: 48px;
+      font-size: 20px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       cursor: pointer;
     }
 
-    /* 下部早見表ドロワー */
-    .guide-panel {
+    /* 下部ボトムシート（引き出し式） */
+    .bottom-sheet {
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
       z-index: 999;
-      background: rgba(255, 255, 255, 0.96);
-      backdrop-filter: blur(8px);
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
       border-top-left-radius: 16px;
       border-top-right-radius: 16px;
-      box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
-      padding: 8px 12px;
-      max-height: 28vh;
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.15);
+      transition: max-height 0.3s ease;
+      max-height: 42px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .bottom-sheet.open {
+      max-height: 45vh;
+    }
+    .sheet-header {
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: bold;
+      color: #2c3e50;
+      border-bottom: 1px solid #eee;
+    }
+    .sheet-content {
+      padding: 8px 12px 14px;
       overflow-y: auto;
     }
+
+    /* 早見表タブ＆チップス */
     .guide-tabs { display: flex; gap: 4px; margin-bottom: 6px; }
     .tab-btn {
       flex: 1;
-      padding: 4px 6px;
+      padding: 5px;
       background: #eceff1;
       border: none;
       border-radius: 6px;
@@ -142,18 +135,17 @@
       cursor: pointer;
     }
     .tab-btn.active { background: #d84315; color: white; }
-
     .color-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
     .chip {
-      padding: 3px 6px;
+      padding: 4px 8px;
       border-radius: 14px;
-      font-size: 9.5px;
+      font-size: 10px;
       font-weight: bold;
       cursor: pointer;
       border: 1px solid rgba(0,0,0,0.1);
     }
 
-    /* モーダル共通 */
+    /* 共通モーダル設定 */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -165,39 +157,62 @@
     }
     .modal-box {
       background: white;
-      padding: 14px;
+      padding: 16px;
       border-radius: 14px;
-      width: 88%;
-      max-width: 380px;
-      max-height: 85vh;
+      width: 86%;
+      max-width: 360px;
+      max-height: 80vh;
       overflow-y: auto;
-      font-size: 11.5px;
+      font-size: 12px;
       box-shadow: 0 8px 24px rgba(0,0,0,0.25);
     }
-    .modal-box h3 { margin: 0 0 6px; font-size: 14px; color: #2c3e50; }
+    .modal-box h3 { margin: 0 0 10px; font-size: 15px; color: #2c3e50; }
     .modal-box input, .modal-box textarea, .modal-box select {
       width: 100%;
       box-sizing: border-box;
-      margin: 3px 0 6px;
-      padding: 5px 6px;
+      margin: 4px 0 8px;
+      padding: 6px 8px;
       border: 1px solid #ccc;
       border-radius: 6px;
-      font-size: 11.5px;
+      font-size: 12px;
     }
-    .btn-row { display: flex; gap: 5px; margin-top: 6px; }
+    .btn-row { display: flex; gap: 6px; margin-top: 8px; }
     .btn-act {
       flex: 1;
-      padding: 6px;
+      padding: 8px;
       border-radius: 6px;
       border: none;
       color: white;
       font-weight: bold;
-      font-size: 10.5px;
+      font-size: 11px;
       cursor: pointer;
       text-align: center;
     }
 
-    /* ギャラリーグリッド */
+    /* ツールメニュー内ボタングリッド */
+    .menu-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .menu-item {
+      padding: 10px 8px;
+      background: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: bold;
+      color: #333;
+      text-align: center;
+      cursor: pointer;
+    }
+    .menu-item.active {
+      background: #ffebee;
+      border-color: #e53935;
+      color: #c62828;
+    }
+
     .gallery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
     .gallery-card { border: 1px solid #eee; border-radius: 8px; overflow: hidden; background: #fafafa; cursor: pointer; }
     .gallery-card img { width: 100%; height: 80px; object-fit: cover; display: block; }
@@ -208,105 +223,124 @@
 
   <div id="map"></div>
 
-  <!-- 左上: コンパス・日没・潮汐ウィジェット -->
+  <!-- 左上: コンパクト情報 -->
   <div class="info-widget">
-    <div id="compassDial" class="compass-dial" title="スマホの向き">▲</div>
+    <div id="compassDial" class="compass-dial">▲</div>
     <div>
-      <div id="sunTimeText">☀️ 日没計算中...</div>
-      <div id="tideText" style="color:#0277bd;">🌊 潮汐計算中...</div>
+      <span id="sunTimeText">日没 --:--</span> | <span id="tideText" style="color:#0277bd;">潮汐計算中</span>
     </div>
   </div>
 
-  <!-- 右上: ツールパネル -->
-  <div class="top-panel">
-    <div>
-      <b>🗺️ レイヤー</b>
-      <select id="baseMapSelect" class="base-select" style="width:100%; margin-top:1px;">
+  <!-- 右上: メニュー開閉ボタン -->
+  <button class="menu-fab" onclick="openModal('toolsModal')">
+    ⚙️ ツール・設定
+  </button>
+
+  <!-- 右下: GPSボタン -->
+  <button id="gpsBtn" class="gps-btn" title="現在地を表示">📍</button>
+
+  <!-- 下部: 引き出し式 お宝早見表 -->
+  <div class="bottom-sheet" id="bottomSheet">
+    <div class="sheet-header" onclick="toggleBottomSheet()">
+      <span id="sheetHeaderTitle">⛏️ お宝早見表（タップで展開）</span>
+      <span id="sheetArrow">▲</span>
+    </div>
+    <div class="sheet-content">
+      <div class="guide-tabs">
+        <button class="tab-btn active" id="tabGeo" onclick="switchGuideTab('geo')">🗺️ 地質の色</button>
+        <button class="tab-btn" id="tabStone" onclick="switchGuideTab('stone')">💎 石から逆引き</button>
+        <button class="tab-btn" id="tabCode" onclick="switchGuideTab('code')">🔤 地質記号</button>
+      </div>
+
+      <div id="viewGeo">
+        <div class="color-chips">
+          <div class="chip" style="background:#ffcdd2;" onclick="showGuide('granite')">🌸 花崗岩（水晶/長石）</div>
+          <div class="chip" style="background:#ffe0b2;" onclick="showGuide('rhyolite')">🍊 流紋岩（メノウ/碧玉）</div>
+          <div class="chip" style="background:#c8e6c9;" onclick="showGuide('serpentine')">🌿 蛇紋岩（ヒスイ/変成）</div>
+          <div class="chip" style="background:#bbdefb;" onclick="showGuide('sediment')">💧 堆積岩（化石/珪化木）</div>
+          <div class="chip" style="background:#e1bee7;" onclick="showGuide('chert')">🍇 チャート（赤石/フリント）</div>
+          <div class="chip" style="background:#cfd8dc;" onclick="showGuide('basalt')">🪨 玄武岩（沸石/ペリドット）</div>
+        </div>
+      </div>
+
+      <div id="viewStone" style="display:none;">
+        <div class="color-chips">
+          <div class="chip" style="background:#fff3e0;" onclick="showStoneGuide('agate')">💎 メノウ・玉髄</div>
+          <div class="chip" style="background:#ede7f6;" onclick="showStoneGuide('quartz')">✨ 水晶・石英</div>
+          <div class="chip" style="background:#e8f5e9;" onclick="showStoneGuide('jade')">🟢 ヒスイ・ネフライト</div>
+          <div class="chip" style="background:#ffebee;" onclick="showStoneGuide('jasper')">🔴 碧玉（ジャスパー）</div>
+          <div class="chip" style="background:#e0f7fa;" onclick="showStoneGuide('wood')">🪵 珪化木</div>
+          <div class="chip" style="background:#f3e5f5;" onclick="showStoneGuide('fossil')">🐚 貝化石・アンモ</div>
+          <div class="chip" style="background:#eceff1;" onclick="showStoneGuide('obsidian')">🖤 黒曜石</div>
+          <div class="chip" style="background:#fffde7;" onclick="showStoneGuide('garnet')">🍇 ガーネット</div>
+        </div>
+      </div>
+
+      <div id="viewCode" style="display:none; font-size:10px; line-height:1.4; color:#37474f; background:#f9f9f9; padding:6px; border-radius:6px; margin-bottom:4px;">
+        <b>🔤 記号の見方（例: N1_vas = 新第三紀前期 火山岩）</b><br>
+        ・<b>年代:</b> Q（第四紀）、N（新第三紀）、Pg（古第三紀）、K（白亜紀）、J（ジュラ紀）<br>
+        ・<b>岩相:</b> s（堆積岩）、v・vas（火山岩）、p・pam（花崗岩等）、m（蛇紋岩等）
+      </div>
+
+      <div id="guideContent" style="font-size:11px; line-height:1.45; color:#37474f; background:#f9f9f9; padding:8px; border-radius:6px;">
+        ボタンをタップすると、採れるお宝や現場での探し方アドバイスが表示されます！
+      </div>
+    </div>
+  </div>
+
+  <!-- モーダル: ツール＆設定一覧（メニュー） -->
+  <div class="modal-overlay" id="toolsModal">
+    <div class="modal-box">
+      <h3>⚙️ ツール＆設定</h3>
+      
+      <label><b>🗺️ 地図レイヤー</b></label>
+      <select id="baseMapSelect" style="margin-bottom:6px;">
         <option value="photo">航空写真（川原・足場）</option>
         <option value="hillshade">陰影起伏図（崖・段丘）</option>
         <option value="relief">色別標高図（高低差）</option>
         <option value="pale">淡色地図（スッキリ）</option>
         <option value="std">標準地図</option>
       </select>
-    </div>
-    <div>
-      <b>地質図の濃さ</b>
-      <input id="opacitySlider" type="range" min="0" max="1" step="0.05" value="0.65" style="width:100%;">
-    </div>
-    
-    <button id="privacyBtn" class="btn-tool btn-privacy" onclick="togglePrivacy()">🔒 共有保護: OFF</button>
-    <button id="wakeLockBtn" class="btn-tool" onclick="toggleWakeLock()">💡 スリープ防止: OFF</button>
-    <button id="trackBtn" class="btn-tool">🐾 軌跡記録: OFF</button>
-    <button id="measureBtn" class="btn-tool btn-measure" onclick="toggleMeasure()">📏 距離計測: OFF</button>
-    <button class="btn-tool btn-radar" onclick="openRadarModal()">⛈️ 雨雲・河川防災</button>
-    <button id="galleryBtn" class="btn-tool btn-gallery" onclick="openGalleryModal()">📖 お宝図鑑ギャラリー</button>
-    <button id="diagBtn" class="btn-tool btn-diag" onclick="openDiagModal()">🔍 拾った石を鑑定</button>
-    <button id="dataManageBtn" class="btn-tool" onclick="openDataModal()">💾 ログ共有・写真一括</button>
-    <button class="btn-tool btn-info" onclick="openInfoModal()">ℹ️ 採集マナー・出典</button>
 
-    <hr style="border:0; border-top:1px solid #ddd; margin:1px 0;">
-    <button id="downloadTilesBtn" class="btn-tool btn-offline">📥 表示範囲を保存</button>
-    <div id="cacheStatus" style="font-size:8.5px; color:#666; text-align:center;">キャッシュ: 0枚</div>
-  </div>
+      <label><b>地質図の濃さ: <span id="opacityVal">65%</span></b></label>
+      <input id="opacitySlider" type="range" min="0" max="1" step="0.05" value="0.65">
 
-  <button id="gpsBtn" class="gps-btn" title="現在地を表示">📍</button>
-
-  <!-- お宝早見表ドロワー -->
-  <div class="guide-panel">
-    <div class="guide-tabs">
-      <button class="tab-btn active" id="tabGeo" onclick="switchGuideTab('geo')">🗺️ 地質の色</button>
-      <button class="tab-btn" id="tabStone" onclick="switchGuideTab('stone')">💎 石から逆引き</button>
-      <button class="tab-btn" id="tabCode" onclick="switchGuideTab('code')">🔤 地質記号</button>
-    </div>
-
-    <div id="viewGeo">
-      <div class="color-chips">
-        <div class="chip" style="background:#ffcdd2;" onclick="showGuide('granite')">🌸 花崗岩（水晶/長石）</div>
-        <div class="chip" style="background:#ffe0b2;" onclick="showGuide('rhyolite')">🍊 流紋岩（メノウ/碧玉）</div>
-        <div class="chip" style="background:#c8e6c9;" onclick="showGuide('serpentine')">🌿 蛇紋岩（ヒスイ/変成）</div>
-        <div class="chip" style="background:#bbdefb;" onclick="showGuide('sediment')">💧 堆積岩（化石/珪化木）</div>
-        <div class="chip" style="background:#e1bee7;" onclick="showGuide('chert')">🍇 チャート（赤石/フリント）</div>
-        <div class="chip" style="background:#cfd8dc;" onclick="showGuide('basalt')">🪨 玄武岩（沸石/ペリドット）</div>
+      <div class="menu-grid">
+        <div id="wakeLockBtn" class="menu-item" onclick="toggleWakeLock()">💡 スリープ防止: OFF</div>
+        <div id="trackBtn" class="menu-item">🐾 軌跡記録: OFF</div>
+        <div id="privacyBtn" class="menu-item" onclick="togglePrivacy()">🔒 共有保護: OFF</div>
+        <div id="measureBtn" class="menu-item" onclick="toggleMeasure()">📏 距離計測: OFF</div>
+        <div class="menu-item" onclick="openModal('galleryModal')">📖 お宝図鑑</div>
+        <div class="menu-item" onclick="openModal('diagModal')">🔍 拾った石鑑定</div>
+        <div class="menu-item" onclick="openModal('radarModal')">⛈️ 雨雲・河川</div>
+        <div class="menu-item" onclick="openModal('dataModal')">💾 ログ管理・写真</div>
       </div>
-    </div>
 
-    <div id="viewStone" style="display:none;">
-      <div class="color-chips">
-        <div class="chip" style="background:#fff3e0;" onclick="showStoneGuide('agate')">💎 メノウ・玉髄</div>
-        <div class="chip" style="background:#ede7f6;" onclick="showStoneGuide('quartz')">✨ 水晶・石英</div>
-        <div class="chip" style="background:#e8f5e9;" onclick="showStoneGuide('jade')">🟢 ヒスイ・ネフライト</div>
-        <div class="chip" style="background:#ffebee;" onclick="showStoneGuide('jasper')">🔴 碧玉（ジャスパー）</div>
-        <div class="chip" style="background:#e0f7fa;" onclick="showStoneGuide('wood')">🪵 珪化木</div>
-        <div class="chip" style="background:#f3e5f5;" onclick="showStoneGuide('fossil')">🐚 貝化石・アンモ</div>
-        <div class="chip" style="background:#eceff1;" onclick="showStoneGuide('obsidian')">🖤 黒曜石</div>
-        <div class="chip" style="background:#fffde7;" onclick="showStoneGuide('garnet')">🍇 ガーネット</div>
+      <div style="margin-top:10px; padding:8px; background:#e0f2f1; border-radius:8px; text-align:center;">
+        <button id="downloadTilesBtn" style="background:#00897b; color:white; border:none; padding:8px 12px; border-radius:6px; font-weight:bold; width:100%; cursor:pointer;">📥 表示範囲をオフライン保存</button>
+        <div id="cacheStatus" style="font-size:9.5px; color:#555; margin-top:4px;">キャッシュ: 0枚</div>
       </div>
-    </div>
 
-    <div id="viewCode" style="display:none; font-size:9.5px; line-height:1.4; color:#37474f; background:#fff; padding:5px; border-radius:6px; border:1px solid #eee; margin-bottom:4px;">
-      <b>🔤 記号の見方（例: N1_vas = 新第三紀前期 火山岩）</b><br>
-      ・<b>年代:</b> Q（第四紀）、N（新第三紀）、Pg（古第三紀）、K（白亜紀）、J（ジュラ紀）、P（ペルム紀）<br>
-      ・<b>岩相:</b> s（堆積岩）、v・vas（火山岩）、p・pam（花崗岩等の深成岩）、m（蛇紋岩等の変成岩）
-    </div>
-
-    <div id="guideContent" style="font-size:10.5px; line-height:1.45; color:#37474f; background:#fff; padding:6px 8px; border-radius:6px; border:1px solid #eee;">
-      上のボタンをタップすると、採れるお宝や現場での探し方アドバイスが表示されます！
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="btn-act" style="background:#455a64;" onclick="openModal('infoModal')">ℹ️ マナー・出典</button>
+        <button class="btn-act" style="background:#888;" onclick="closeModal('toolsModal')">閉じる</button>
+      </div>
     </div>
   </div>
 
-  <!-- モーダル1: 採集ログ記録 -->
+  <!-- モーダル: 採集ログ記録 -->
   <div class="modal-overlay" id="logModal">
     <div class="modal-box">
       <h3 style="color:#2e7d32;">💎 お宝採集ログを記録</h3>
       <label><b>石・鉱物の名前</b></label>
       <input type="text" id="logStoneName" placeholder="例: メノウ、水晶、珪化木など">
 
-      <label><b>メモ（発見場所の状況など）</b></label>
+      <label><b>メモ</b></label>
       <textarea id="logMemo" rows="2" placeholder="例: 川原の浅瀬で発見。"></textarea>
 
-      <label><b>写真（カメラ/保存画像 - 位置情報自動解析）</b></label>
+      <label><b>写真（位置情報自動解析対応）</b></label>
       <input type="file" id="logPhoto" accept="image/*" onchange="checkExifLocation(this)">
-      <div id="exifAlert" style="font-size:9.5px; color:#2e7d32; display:none; margin-bottom:4px;">📍 写真からGPS位置情報を検出しました！</div>
+      <div id="exifAlert" style="font-size:10px; color:#2e7d32; display:none; margin-bottom:4px;">📍 写真からGPS位置情報を検出しました！</div>
 
       <div class="btn-row">
         <button class="btn-act" style="background:#888;" onclick="closeModal('logModal')">キャンセル</button>
@@ -315,9 +349,9 @@
     </div>
   </div>
 
-  <!-- モーダル2: マイコレクション図鑑 -->
+  <!-- モーダル: マイコレクション図鑑 -->
   <div class="modal-overlay" id="galleryModal">
-    <div class="modal-box" style="max-width:380px;">
+    <div class="modal-box">
       <h3 style="color:#e65100;">📖 マイコレクション図鑑</h3>
       <div id="galleryContainer" class="gallery-grid"></div>
       <div class="btn-row" style="margin-top:10px;">
@@ -326,7 +360,7 @@
     </div>
   </div>
 
-  <!-- モーダル3: 簡易石鑑定 -->
+  <!-- モーダル: 簡易石鑑定 -->
   <div class="modal-overlay" id="diagModal">
     <div class="modal-box">
       <h3 style="color:#6a1b9a;">🔍 拾った石の簡易チェッカー</h3>
@@ -363,24 +397,24 @@
         <button class="btn-act" style="background:#888;" onclick="closeModal('diagModal')">閉じる</button>
         <button class="btn-act" style="background:#6a1b9a;" onclick="runDiagnosis()">判定する！</button>
       </div>
-      <div id="diagResult" style="margin-top:6px; padding:6px; background:#f3e5f5; border-radius:6px; display:none;"></div>
+      <div id="diagResult" style="margin-top:8px; padding:8px; background:#f3e5f5; border-radius:6px; display:none;"></div>
     </div>
   </div>
 
-  <!-- モーダル4: バックアップ＆EXIF一括読み込み -->
+  <!-- モーダル: バックアップ＆EXIF一括読み込み -->
   <div class="modal-overlay" id="dataModal">
     <div class="modal-box">
-      <h3 style="color:#1565c0;">💾 データ共有＆写真一括配置</h3>
+      <h3 style="color:#1565c0;">💾 データ管理・写真一括配置</h3>
       
       <div style="background:#e3f2fd; padding:8px; border-radius:6px; margin-bottom:8px;">
-        <b>📸 スマホ写真から一括ピン立て</b>
+        <b>📸 写真から一括ピン立て</b>
         <div style="font-size:10px; color:#555; margin-bottom:4px;">位置情報付き写真を選ぶだけで自動配置！</div>
         <input type="file" id="batchPhotoInput" accept="image/*" multiple onchange="batchImportPhotos(event)">
       </div>
 
-      <button class="btn-act" style="background:#1565c0; width:100%; margin-bottom:6px;" onclick="exportLogs()">📤 ログをJSONファイル出力</button>
+      <button class="btn-act" style="background:#1565c0; width:100%; margin-bottom:6px;" onclick="exportLogs()">📤 ログをJSON保存</button>
       
-      <label><b>📥 バックアップを復元 (JSON)</b></label>
+      <label><b>📥 バックアップを復元</b></label>
       <input type="file" id="importFile" accept=".json" onchange="importLogs(event)">
 
       <div class="btn-row">
@@ -389,13 +423,13 @@
     </div>
   </div>
 
-  <!-- モーダル5: トレカ着せ替えダイアログ -->
+  <!-- モーダル: トレカ着せ替え -->
   <div class="modal-overlay" id="cardThemeModal">
     <div class="modal-box">
       <h3 style="color:#e65100;">🎴 トレカデザインを選択</h3>
       <label><b>カードスタイル</b></label>
       <select id="cardThemeSelect">
-        <option value="gold">🏆 SSRゴールド（豪華ホロ風・note映え）</option>
+        <option value="gold">🏆 SSRゴールド（豪華ホロ風）</option>
         <option value="vintage">📜 レトロ博物館標本ラベル風</option>
         <option value="cyber">🌌 サイバー鉱物分析カード</option>
       </select>
@@ -406,14 +440,14 @@
     </div>
   </div>
 
-  <!-- モーダル6: 雨雲・河川防災ダイレクト -->
+  <!-- モーダル: 雨雲・河川防災 -->
   <div class="modal-overlay" id="radarModal">
     <div class="modal-box">
-      <h3 style="color:#0097a7;">⛈️ 雨雲レーダー・河川安全情報</h3>
-      <p style="color:#555; font-size:10.5px; margin:0 0 8px;">川原での急な増水事故を防ぐため、上流の雨雲状況をチェックしましょう。</p>
+      <h3 style="color:#0097a7;">⛈️ 雨雲レーダー・河川防災</h3>
+      <p style="color:#555; font-size:11px; margin:0 0 8px;">上流の雨雲状況をチェックして急な増水に備えましょう。</p>
       
-      <a href="https://www.jma.go.jp/bosai/nowc/" target="_blank" class="btn-act" style="display:block; background:#0288d1; text-decoration:none; margin-bottom:6px;">📡 気象庁 雨雲の動き（ナウキャスト）↗</a>
-      <a href="https://www.river.go.jp/" target="_blank" class="btn-act" style="display:block; background:#00796b; text-decoration:none; margin-bottom:8px;">🌊 国交省 川の防災情報（水位観測）↗</a>
+      <a href="https://www.jma.go.jp/bosai/nowc/" target="_blank" class="btn-act" style="display:block; background:#0288d1; text-decoration:none; margin-bottom:6px;">📡 気象庁 雨雲の動き ↗</a>
+      <a href="https://www.river.go.jp/" target="_blank" class="btn-act" style="display:block; background:#00796b; text-decoration:none; margin-bottom:8px;">🌊 国交省 川の防災情報 ↗</a>
 
       <div class="btn-row">
         <button class="btn-act" style="background:#888;" onclick="closeModal('radarModal')">閉じる</button>
@@ -421,21 +455,19 @@
     </div>
   </div>
 
-  <!-- モーダル7: マナー・出典表示 -->
+  <!-- モーダル: マナー・出典 -->
   <div class="modal-overlay" id="infoModal">
     <div class="modal-box">
       <h3 style="color:#37474f;">ℹ️ 採集マナー・出典情報</h3>
-      <div style="background:#e8f5e9; padding:8px; border-radius:6px; margin-bottom:8px; color:#2e7d32; line-height:1.4;">
+      <div style="background:#e8f5e9; padding:8px; border-radius:6px; margin-bottom:8px; color:#2e7d32; line-height:1.4; font-size:11px;">
         <b>🌿 採集マナーとルール</b><br>
         ・自然公園法、河川法、地域の採集規制を順守してください。<br>
-        ・特別保護地区や天然記念物指定地域（糸魚川ヒスイ峡等）、私有地、稼働鉱山への無断立ち入り・採集は禁止されています。<br>
-        ・自然環境への負荷を避け、節度ある採集を心がけましょう。
+        ・特別保護地区や天然記念物指定地域（糸魚川ヒスイ峡等）、私有地への無断立ち入り・採集は禁止されています。
       </div>
       <div style="background:#f5f5f5; padding:8px; border-radius:6px; color:#555; line-height:1.4; font-size:10px;">
         <b>🗺️ 出典・利用データ</b><br>
-        ・産業技術総合研究所 地質調査総合センター「20万分の1日本シームレス地質図V2」<br>
-        ・国土地理院「地理院タイル（淡色地図・航空写真・陰影起伏図・色別標高図）」<br>
-        ※本ツールは個人研究および野外探索用オープンデータビューアです。
+        ・産総研「20万分の1日本シームレス地質図V2」<br>
+        ・国土地理院「地理院タイル」
       </div>
       <div class="btn-row" style="margin-top:8px;">
         <button class="btn-act" style="background:#37474f;" onclick="closeModal('infoModal')">閉じる</button>
@@ -490,7 +522,6 @@
     });
 
     const map = L.map('map', { zoomControl: false, layers: [baseLayers.photo, geologyLayer] }).setView([37.4, 139.0], 10);
-    L.control.zoom({ position: 'topleft' }).addTo(map);
 
     let currentBase = baseLayers.photo;
     let currentBaseKey = 'photo';
@@ -504,9 +535,17 @@
 
     document.getElementById('opacitySlider').addEventListener('input', (e) => {
       geologyLayer.setOpacity(e.target.value);
+      document.getElementById('opacityVal').innerText = Math.round(e.target.value * 100) + '%';
     });
 
-    // 2. 早見表タブ
+    // 2. ボトムシート開閉
+    function toggleBottomSheet() {
+      const sheet = document.getElementById('bottomSheet');
+      const arrow = document.getElementById('sheetArrow');
+      const isOpen = sheet.classList.toggle('open');
+      arrow.innerText = isOpen ? '▼' : '▲';
+    }
+
     function switchGuideTab(tab) {
       document.getElementById('tabGeo').classList.remove('active');
       document.getElementById('tabStone').classList.remove('active');
@@ -528,14 +567,13 @@
     }
 
     const guideDB = {
-      granite: { title: '🌸 花崗岩・深成岩帯（K_pam / N_pam）', stones: '水晶、長石、雲母、ガーネット', field: '白〜淡いピンクのツブツブ岩。水中でキラキラ光る石や水晶結晶を探そう！' },
-      rhyolite: { title: '🍊 流紋岩・凝灰岩（N_vas / K_vas）', stones: 'メノウ（瑪瑙）、玉髄、碧玉、オパール', field: '石拾い大本命！気泡跡のある転石を割ると飴色のメノウが現れます。' },
-      serpentine: { title: '🌿 蛇紋岩・変成岩帯（P_m / J_m）', stones: 'ヒスイ、ネフライト、滑石、磁鉄鉱', field: '糸魚川のヒスイ探査最重要地質。ずっしり重く油のような光沢の石を狙おう。' },
-      sediment: { title: '💧 堆積岩層（砂泥礫）（N_s / Q_s）', stones: '化石、珪化木、黄鉄鉱ノジュール', field: '丸っこい団塊（ノジュール）や木目が残る珪化木に注目！' },
-      chert: { title: '🍇 チャート・珪質岩（P_ch / M_ch）', stones: '赤石（ジャスパー）、フリント', field: '硬度7で超硬い！鮮やかな赤や緑の艶やかな石。火打石にも。' },
-      basalt: { title: '🪨 玄武岩・安山岩（Q_vas / N_vas）', stones: 'ゼオライト（沸石）、方解石、ペリドット', field: '溶岩の穴ぼこに白い針状結晶や黄緑のペリドット粒が入っています。' }
+      granite: { title: '🌸 花崗岩・深成岩帯', stones: '水晶、長石、雲母、ガーネット', field: '白〜淡いピンクのツブツブ岩。水中でキラキラ光る石や水晶結晶を探そう！' },
+      rhyolite: { title: '🍊 流紋岩・凝灰岩', stones: 'メノウ（瑪瑙）、玉髄、碧玉、オパール', field: '石拾い大本命！気泡跡のある転石を割ると飴色のメノウが現れます。' },
+      serpentine: { title: '🌿 蛇紋岩・変成岩帯', stones: 'ヒスイ、ネフライト、滑石、磁鉄鉱', field: 'ずっしり重く油のような光沢の角ばった石を狙おう。' },
+      sediment: { title: '💧 堆積岩層（砂泥礫）', stones: '化石、珪化木、黄鉄鉱ノジュール', field: '丸っこい団塊（ノジュール）や木目が残る珪化木に注目！' },
+      chert: { title: '🍇 チャート・珪質岩', stones: '赤石（ジャスパー）、フリント', field: '硬度7で超硬い！鮮やかな赤や緑の艶やかな石。' },
+      basalt: { title: '🪨 玄武岩・安山岩', stones: 'ゼオライト（沸石）、方解石、ペリドット', field: '溶岩の穴ぼこに白い針状結晶や黄緑のペリドット粒が入っています。' }
     };
-
     function showGuide(k) {
       const d = guideDB[k];
       if (d) document.getElementById('guideContent').innerHTML = `<b>${d.title}</b><br>💎 <b>期待できる石:</b> ${d.stones}<br><span style="color:#555;">${d.field}</span>`;
@@ -543,21 +581,20 @@
 
     const stoneDB = {
       agate: { name: '💎 メノウ・玉髄', targetGeo: '🍊 オレンジ系（流紋岩）', tips: '濡らして光を透すと飴色に光る石。縞模様や気泡跡が目印！' },
-      quartz: { name: '✨ 水晶・石英', targetGeo: '🌸 ピンク系（花崗岩）', tips: 'ガラスを傷つける六角柱状結晶。砂利の中や石英脈の隙間を探そう。' },
+      quartz: { name: '✨ 水晶・石英', targetGeo: '🌸 ピンク系（花崗岩）', tips: 'ガラスを傷つける六角柱状結晶。砂利の中や石英脈を探そう。' },
       jade: { name: '🟢 ヒスイ・ネフライト', targetGeo: '🌿 緑色系（蛇紋岩帯）', tips: 'ずっしり重く、上品な油光沢と角ばった形状が特徴。' },
-      jasper: { name: '🔴 碧玉・赤石', targetGeo: '🍊 流紋岩 または 🍇 チャート', tips: '不透明で超硬い鮮やかな赤・緑の石。磨くと鏡のよう。' },
+      jasper: { name: '🔴 碧玉・赤石', targetGeo: '🍊 流紋岩 / 🍇 チャート', tips: '不透明で超硬い鮮やかな赤・緑の石。' },
       wood: { name: '🪵 珪化木', targetGeo: '💧 水色系（中新世・鮮新世層）', tips: '年輪や木肌が残り、叩くと金属音がする硬い化石。' },
       fossil: { name: '🐚 貝化石・アンモ', targetGeo: '💧 堆積岩層（頁岩・泥岩）', tips: '丸いノジュールを割ると出現。層状の岩石をチェック！' },
       obsidian: { name: '🖤 黒曜石', targetGeo: '🍊 流紋岩質急冷層', tips: '貝殻状の鋭い割れ口を持つ天然の漆黒ガラス。' },
       garnet: { name: '🍇 ガーネット', targetGeo: '🌸 花崗岩 / 🌿 結晶片岩', tips: '砂利のくぼみや砂州に集まるルビー色の微小結晶粒。' }
     };
-
     function showStoneGuide(k) {
       const d = stoneDB[k];
       if (d) document.getElementById('guideContent').innerHTML = `<b>${d.name}</b><br>🎯 <b>狙う地質:</b> ${d.targetGeo}<br><span style="color:#455a64;">${d.tips}</span>`;
     }
 
-    // 3. EXIF（位置情報）自動解析
+    // 3. EXIF解析＆写真一括
     let detectedExifLatLng = null;
     function checkExifLocation(input) {
       const file = input.files[0];
@@ -580,11 +617,9 @@
       });
     }
 
-    // 写真一括インポート
     function batchImportPhotos(e) {
       const files = e.target.files;
       if (!files || files.length === 0) return;
-      let importedCount = 0;
       const logs = JSON.parse(localStorage.getItem('stone_logs') || '[]');
 
       Array.from(files).forEach(file => {
@@ -626,11 +661,10 @@
               img.src = ev.target.result;
             };
             reader.readAsDataURL(file);
-            importedCount++;
           }
         });
       });
-      alert(`写真の解析を開始しました。GPS情報を含む写真が順次地図上に配置されます！`);
+      alert(`写真の解析を開始しました！GPS付きの写真が地図に自動配置されます。`);
       closeModal('dataModal');
     }
 
@@ -688,19 +722,15 @@
         const sunsetMin = 720 - 4 * lng - eqtime + 540 + H * 4;
         const sH = Math.floor(sunsetMin / 60) % 24;
         const sM = Math.floor(sunsetMin % 60);
-        document.getElementById('sunTimeText').innerText = `🌇 日没: ${String(sH).padStart(2,'0')}:${String(sM).padStart(2,'0')}`;
+        document.getElementById('sunTimeText').innerText = `日没 ${String(sH).padStart(2,'0')}:${String(sM).padStart(2,'0')}`;
       }
 
       const baseDate = new Date(2000, 0, 6, 18, 14);
-      const daysSince = (now - baseDate) / 86400000;
-      const moonAge = (daysSince % 29.530588853).toFixed(1);
+      const moonAge = (((now - baseDate) / 86400000) % 29.530588853).toFixed(1);
       let tideName = '中潮';
-      if ((moonAge >= 29 || moonAge <= 2) || (moonAge >= 14 && moonAge <= 17)) tideName = '大潮（干潮狙い目）';
+      if ((moonAge >= 29 || moonAge <= 2) || (moonAge >= 14 && moonAge <= 17)) tideName = '大潮';
       else if ((moonAge >= 7 && moonAge <= 9) || (moonAge >= 22 && moonAge <= 24)) tideName = '小潮';
-      else if (moonAge == 10 || moonAge == 25) tideName = '長潮';
-      else if (moonAge == 11 || moonAge == 26) tideName = '若潮';
-
-      document.getElementById('tideText').innerText = `🌊 ${tideName} (月齢:${moonAge})`;
+      document.getElementById('tideText').innerText = `🌊 ${tideName}`;
     }
     updateSunAndTide(37.4, 139.0);
 
@@ -716,6 +746,7 @@
       btn.classList.toggle('active', isMeasuring);
       measurePoints = [];
       measureLine.setLatLngs([]);
+      closeModal('toolsModal');
     }
 
     // 8. GPS軌跡
@@ -758,15 +789,15 @@
       const logs = JSON.parse(localStorage.getItem('stone_logs') || '[]');
       logs.forEach((item, index) => {
         L.marker([item.lat, item.lng], {
-          icon: L.divIcon({ html: '<div style="font-size:22px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.4));">💎</div>', iconSize: [26, 26], iconAnchor: [13, 13] })
+          icon: L.divIcon({ html: '<div style="font-size:20px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.4));">💎</div>', iconSize: [24, 24], iconAnchor: [12, 12] })
         }).addTo(logLayer).bindPopup(`
-          <div style="min-width:200px; font-size:12px;">
+          <div style="min-width:190px; font-size:11.5px;">
             <h4 style="margin:0 0 4px; color:#2e7d32;">💎 ${item.name}</h4>
-            <div style="font-size:10px; color:#888;">📅 ${item.date} | 📍 ${formatCoord(item.lat)}, ${formatCoord(item.lng)}</div>
-            ${item.photo ? `<img src="${item.photo}" style="width:100%; border-radius:6px; margin:4px 0; max-height:140px; object-fit:cover;">` : ''}
+            <div style="font-size:9.5px; color:#888;">📅 ${item.date} | 📍 ${formatCoord(item.lat)}, ${formatCoord(item.lng)}</div>
+            ${item.photo ? `<img src="${item.photo}" style="width:100%; border-radius:6px; margin:4px 0; max-height:130px; object-fit:cover;">` : ''}
             <div>${item.memo}</div>
             <div class="btn-row">
-              <button style="background:#e65100; color:white; border:none; padding:4px 6px; border-radius:4px; font-size:9.5px; cursor:pointer;" onclick="openCardThemeModal(${index})">🎴 トレカ生成</button>
+              <button style="background:#e65100; color:white; border:none; padding:4px 6px; border-radius:4px; font-size:9.5px; cursor:pointer;" onclick="openCardThemeModal(${index})">🎴 トレカ</button>
               <button style="background:#d32f2f; color:white; border:none; padding:4px 6px; border-radius:4px; font-size:9.5px; cursor:pointer;" onclick="deleteLog(${index})">削除</button>
             </div>
           </div>
@@ -776,7 +807,7 @@
 
     function openCardThemeModal(idx) {
       currentCardIndex = idx;
-      document.getElementById('cardThemeModal').style.display = 'flex';
+      openModal('cardThemeModal');
     }
 
     function renderAndDownloadCard() {
@@ -793,10 +824,8 @@
         const bgGrad = ctx.createLinearGradient(0, 0, 600, 840);
         bgGrad.addColorStop(0, '#1a237e'); bgGrad.addColorStop(0.5, '#311b92'); bgGrad.addColorStop(1, '#0d47a1');
         ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, 600, 840);
-
         ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 12; ctx.strokeRect(15, 15, 570, 810);
         ctx.strokeStyle = '#fff8e1'; ctx.lineWidth = 2; ctx.strokeRect(25, 25, 550, 790);
-
         ctx.fillStyle = '#ffffff'; ctx.font = 'bold 32px sans-serif'; ctx.fillText(`💎 ${item.name}`, 45, 75);
         ctx.fillStyle = '#ffd54f'; ctx.font = 'bold 18px sans-serif'; ctx.fillText('★ SSR ULTRA RARE MINERAL ★', 45, 105);
       } else if (theme === 'vintage') {
@@ -867,7 +896,7 @@
           container.appendChild(card);
         });
       }
-      document.getElementById('galleryModal').style.display = 'flex';
+      openModal('galleryModal');
     }
 
     // 地図クリック
@@ -890,18 +919,14 @@
           <h4 style="margin:0 0 3px;">📍 選択地点</h4>
           <div>${formatCoord(lat)}, ${formatCoord(lng)}</div>
           <div class="btn-row">
-            <button class="btn-act" style="background:#2e7d32;" onclick="openLogModal()">💎 採集ログ</button>
+            <button class="btn-act" style="background:#2e7d32;" onclick="openModal('logModal')">💎 採集ログ</button>
             <a href="${naviUrl}" target="_blank" class="btn-act" style="background:#1565c0; text-decoration:none;">公式詳細 ↗</a>
           </div>
         </div>
       `).openPopup();
     });
 
-    function openLogModal() { document.getElementById('logModal').style.display = 'flex'; }
-    function openDiagModal() { document.getElementById('diagModal').style.display = 'flex'; }
-    function openDataModal() { document.getElementById('dataModal').style.display = 'flex'; }
-    function openRadarModal() { document.getElementById('radarModal').style.display = 'flex'; }
-    function openInfoModal() { document.getElementById('infoModal').style.display = 'flex'; }
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
     function saveCurrentLog() {
@@ -909,7 +934,6 @@
       const memo = document.getElementById('logMemo').value || '';
       const file = document.getElementById('logPhoto').files[0];
       const now = new Date().toLocaleDateString('ja-JP');
-
       const targetCoords = detectedExifLatLng || selectedLatLng || { lat: 37.4, lng: 139.0 };
 
       if (file) {
@@ -976,7 +1000,7 @@
       resDiv.innerHTML = '<b style="color:#6a1b9a;">🔍 候補:</b><br>' + cand.join('<br><br>');
     }
 
-    // 11. データバックアップ
+    // 11. バックアップ
     function exportLogs() {
       const logs = localStorage.getItem('stone_logs') || '[]';
       const a = document.createElement('a');
@@ -1004,7 +1028,7 @@
       reader.readAsText(file);
     }
 
-    // 12. スマート・オフライン保存
+    // 12. オフライン保存
     async function updateCacheCount() {
       const keys = await tileDB.keys();
       document.getElementById('cacheStatus').innerText = `キャッシュ: ${keys.length}枚`;
@@ -1054,7 +1078,7 @@
       updateCacheCount();
     });
 
-    // 13. GPS現在地
+    // 13. GPSボタン
     document.getElementById('gpsBtn').addEventListener('click', () => {
       if (!navigator.geolocation) return alert('GPS非対応');
       navigator.geolocation.getCurrentPosition(
