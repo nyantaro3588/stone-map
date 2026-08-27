@@ -20,29 +20,27 @@
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; background: #000; }
     #map { width: 100%; height: 100%; }
 
-    /* 左上コンパクト情報 */
+    /* 左上: 2段マルチ情報バッジ */
     .info-widget {
       position: absolute;
-      top: max(22px, env(safe-area-inset-top, 22px));
-      left: 14px;
+      top: max(20px, env(safe-area-inset-top, 20px));
+      left: 12px;
       z-index: 1000;
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(8px);
-      padding: 5px 10px;
-      border-radius: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      font-size: 10px;
-      font-weight: bold;
-      color: #333;
+      padding: 5px 9px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.22);
       display: flex;
       align-items: center;
       gap: 8px;
+      max-width: 200px;
     }
 
-    /* 本格方位磁針デザイン */
+    /* 本格方位磁針 */
     .compass-container {
-      width: 22px;
-      height: 22px;
+      width: 26px;
+      height: 26px;
       position: relative;
       border-radius: 50%;
       border: 1.5px solid #455a64;
@@ -50,53 +48,77 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-shrink: 0;
       cursor: pointer;
     }
     .compass-needle {
       width: 4px;
-      height: 18px;
+      height: 22px;
       position: absolute;
       transition: transform 0.15s ease-out;
       transform-origin: center center;
     }
-    /* 赤い北針と白い南針 */
     .needle-n {
       width: 0; height: 0;
       border-left: 2px solid transparent;
       border-right: 2px solid transparent;
-      border-bottom: 9px solid #e53935;
+      border-bottom: 11px solid #e53935;
       margin: 0 auto;
     }
     .needle-s {
       width: 0; height: 0;
       border-left: 2px solid transparent;
       border-right: 2px solid transparent;
-      border-top: 9px solid #90a4ae;
+      border-top: 11px solid #90a4ae;
       margin: 0 auto;
+    }
+
+    /* 2段テキスト */
+    .info-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 10px;
+      line-height: 1.25;
+      font-weight: bold;
+      color: #333;
+      white-space: nowrap;
+    }
+    .info-line-top {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .info-line-bottom {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 9.5px;
+      color: #555;
     }
 
     /* 右上ツールボタン群 */
     .top-right-bar {
       position: absolute;
-      top: max(22px, env(safe-area-inset-top, 22px));
-      right: 14px;
+      top: max(20px, env(safe-area-inset-top, 20px));
+      right: 12px;
       z-index: 1000;
       display: flex;
-      gap: 6px;
+      gap: 5px;
     }
     .action-fab {
       background: #ffffff;
       color: #333;
       border: none;
       border-radius: 20px;
-      padding: 6px 10px;
-      font-size: 11.5px;
+      padding: 6px 9px;
+      font-size: 11px;
       font-weight: bold;
       box-shadow: 0 2px 10px rgba(0,0,0,0.2);
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
     }
 
     /* 右下 GPSボタン */
@@ -171,7 +193,7 @@
       border: 1px solid rgba(0,0,0,0.1);
     }
 
-    /* モーダル */
+    /* 共通モーダル */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -244,7 +266,7 @@
 
   <div id="map"></div>
 
-  <!-- 左上: 方角文字＋本格磁針バッジ -->
+  <!-- 左上: 2段マルチ情報ウィジェット -->
   <div class="info-widget">
     <div class="compass-container" onclick="requestOrientationPermission()" title="コンパス（タップでセンサー起動）">
       <div id="compassNeedle" class="compass-needle">
@@ -252,10 +274,17 @@
         <div class="needle-s"></div>
       </div>
     </div>
-    <div>
-      <span id="headingText" style="color:#d84315;">北 (0°)</span> | 
-      <span id="sunTimeText">日没 --:--</span> | 
-      <span id="tideText" style="color:#0277bd;">潮汐</span>
+    <div class="info-lines">
+      <div class="info-line-top">
+        <span id="headingText" style="color:#d84315;">北 (0°)</span>
+        <span style="color:#ccc;">|</span>
+        <span id="zoomText" style="color:#455a64;">Lv.10</span>
+      </div>
+      <div class="info-line-bottom">
+        <span id="sunTimeText">🌇 18:22</span>
+        <span style="color:#ccc;">|</span>
+        <span id="tideText" style="color:#0277bd;">🌊 大潮 (15.2)</span>
+      </div>
     </div>
   </div>
 
@@ -553,6 +582,13 @@
 
     const map = L.map('map', { zoomControl: false, layers: [baseLayers.photo, geologyLayer] }).setView([37.4, 139.0], 10);
 
+    // ズーム倍率更新
+    function updateZoomDisplay() {
+      document.getElementById('zoomText').innerText = `Lv.${map.getZoom()}`;
+    }
+    map.on('zoomend', updateZoomDisplay);
+    updateZoomDisplay();
+
     let currentBase = baseLayers.photo;
     let currentBaseKey = 'photo';
     document.getElementById('baseMapSelect').addEventListener('change', (e) => {
@@ -624,7 +660,7 @@
       if (d) document.getElementById('guideContent').innerHTML = `<b>${d.name}</b><br>🎯 <b>狙う地質:</b> ${d.targetGeo}<br><span style="color:#455a64;">${d.tips}</span>`;
     }
 
-    // 4. 電子コンパス（リアルタイム16方位＆磁針回転）
+    // 4. 電子コンパス
     function getDirectionName(deg) {
       const directions = ['北', '北北東', '北東', '東北東', '東', '東南東', '南東', '南南東', '南', '南南西', '南西', '西南西', '西', '西北西', '北西', '北北西'];
       const index = Math.round(deg / 22.5) % 16;
@@ -634,9 +670,9 @@
     function handleOrientation(e) {
       let heading = null;
       if (e.webkitCompassHeading !== undefined) {
-        heading = e.webkitCompassHeading; // iOS (真北/磁北)
+        heading = e.webkitCompassHeading;
       } else if (e.alpha !== null) {
-        heading = (360 - e.alpha) % 360; // Android
+        heading = (360 - e.alpha) % 360;
       }
 
       if (heading !== null) {
@@ -768,7 +804,7 @@
       } else { alert('非対応端末です'); }
     }
 
-    // 8. 日没・潮汐計算
+    // 8. 日没・潮汐計算（詳細版）
     function updateSunAndTide(lat, lng) {
       const now = new Date();
       const start = new Date(now.getFullYear(), 0, 0);
@@ -783,7 +819,18 @@
         const sunsetMin = 720 - 4 * lng - eqtime + 540 + H * 4;
         const sH = Math.floor(sunsetMin / 60) % 24;
         const sM = Math.floor(sunsetMin % 60);
-        document.getElementById('sunTimeText').innerText = `日没 ${String(sH).padStart(2,'0')}:${String(sM).padStart(2,'0')}`;
+
+        const curMin = now.getHours() * 60 + now.getMinutes();
+        const remain = Math.floor(sunsetMin - curMin);
+        let remainStr = '';
+        if (remain > 0) {
+          const rH = Math.floor(remain / 60);
+          const rM = remain % 60;
+          remainStr = ` (残${rH > 0 ? rH + 'h' : ''}${rM}m)`;
+        } else {
+          remainStr = ' (日没済)';
+        }
+        document.getElementById('sunTimeText').innerText = `🌇 ${String(sH).padStart(2,'0')}:${String(sM).padStart(2,'0')}${remainStr}`;
       }
 
       const baseDate = new Date(2000, 0, 6, 18, 14);
@@ -791,7 +838,10 @@
       let tideName = '中潮';
       if ((moonAge >= 29 || moonAge <= 2) || (moonAge >= 14 && moonAge <= 17)) tideName = '大潮';
       else if ((moonAge >= 7 && moonAge <= 9) || (moonAge >= 22 && moonAge <= 24)) tideName = '小潮';
-      document.getElementById('tideText').innerText = `🌊 ${tideName}`;
+      else if (moonAge == 10 || moonAge == 25) tideName = '長潮';
+      else if (moonAge == 11 || moonAge == 26) tideName = '若潮';
+
+      document.getElementById('tideText').innerText = `🌊 ${tideName} (${moonAge})`;
     }
     updateSunAndTide(37.4, 139.0);
 
