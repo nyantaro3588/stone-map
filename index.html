@@ -44,22 +44,25 @@
     .stone-tag-box { margin-top: 8px; padding: 8px; background: #fff8e1; border-radius: 8px; border: 1px solid #ffe082; }
     .stone-title { font-weight: bold; color: #d84315; margin-bottom: 4px; font-size: 13px; }
     .stone-list { color: #37474f; font-size: 12px; margin: 0; padding-left: 18px; }
+    .status-text { font-size: 10px; color: #888; margin-top: 6px; }
   </style>
 </head>
 <body>
 
   <div id="map"></div>
 
+  <!-- 地質図の濃さスライダー -->
   <div class="control-box">
     <label><b>地質図の濃さ</b></label><br>
     <input id="opacitySlider" type="range" min="0" max="1" step="0.05" value="0.6" style="width: 130px;">
   </div>
 
+  <!-- GPSボタン -->
   <button id="gpsBtn" class="gps-btn" title="現在地を表示">📍</button>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // 1. 地図初期化（新潟・越後山脈エリア）
+    // 1. 地図の初期化
     const map = L.map('map', { zoomControl: false }).setView([37.4, 139.0], 9);
     L.control.zoom({ position: 'topleft' }).addTo(map);
 
@@ -80,7 +83,7 @@
       geologyLayer.setOpacity(e.target.value);
     });
 
-    // 2. お宝鉱物・岩石判定データベース
+    // 2. お宝判定辞書
     const mineralGuide = [
       {
         keywords: ['花崗岩', '深成岩', 'ペグマタイト', '花崗斑岩', '閃緑岩', '斑れい岩'],
@@ -134,12 +137,28 @@
       return null;
     }
 
-    // 3. 産総研 地質データ取得
+    // 3. 安定CORSプロキシ自動フェイルオーバー
     async function fetchGeology(lat, lng) {
-      const url = `https://gbank.gsj.jp/seamless/v2/api/1.2/point?lat=${lat}&lng=${lng}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('API応答エラー');
-      return await res.json();
+      const rawApi = `https://gbank.gsj.jp/seamless/v2/api/1.2/point?lat=${lat.toFixed(5)}&lng=${lng.toFixed(5)}`;
+      
+      const proxyUrls = [
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(rawApi)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rawApi)}`,
+        `https://thingproxy.freeboard.io/fetch/${rawApi}`
+      ];
+
+      for (const pUrl of proxyUrls) {
+        try {
+          const res = await fetch(pUrl, { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data) return data;
+          }
+        } catch (err) {
+          console.warn('Proxy retry:', pUrl, err);
+        }
+      }
+      throw new Error('地質サーバーへの接続経路が混雑しています');
     }
 
     // 4. クリックイベント
@@ -148,7 +167,7 @@
       const popup = L.popup().setLatLng(e.latlng).setContent('🔍 地質データを照会中...').openOn(map);
 
       try {
-        const rawData = await fetchGeology(lat.toFixed(5), lng.toFixed(5));
+        const rawData = await fetchGeology(lat, lng);
         const data = Array.isArray(rawData) ? rawData[0] : rawData;
 
         if (data && (data.title || data.litho || data.formation || data.group || data.symbol || data.age)) {
@@ -191,24 +210,12 @@
           popup.setContent('<div class="info-card">地質情報が見つかりませんでした（海域やデータ未整備地域です）。</div>');
         }
       } catch (err) {
-        if (location.protocol === 'file:') {
-          popup.setContent(`
-            <div class="info-card">
-              ⚠️ <b>ローカルファイル制限エラー</b><br>
-              <div style="font-size:11px; color:#555; margin-top:4px;">
-                file:/// からの直接実行はブラウザにブロックされます。<br>
-                GitHub Pages か ローカルサーバー（http://）から開いてね！
-              </div>
-            </div>
-          `);
-        } else {
-          popup.setContent(`
-            <div class="info-card">
-              ⚠️ <b>データ取得に失敗しました</b><br>
-              <div style="font-size:11px; color:#c62828; margin-top:4px;">${err.message}</div>
-            </div>
-          `);
-        }
+        popup.setContent(`
+          <div class="info-card">
+            ⚠️ <b>データ取得に失敗しました</b><br>
+            <div style="font-size:11px; color:#c62828; margin-top:4px;">${err.message}</div>
+          </div>
+        `);
       }
     });
 
