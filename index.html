@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>先生専用・石拾い地質＆採集マップ【極】</title>
+  <title>先生専用・石拾い地質＆採集マップ【極・図鑑強化版】</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
   <style>
@@ -114,14 +114,27 @@
       border-top-left-radius: 16px;
       border-top-right-radius: 16px;
       box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
-      padding: 6px 12px;
-      max-height: 26vh;
+      padding: 8px 12px;
+      max-height: 30vh;
       overflow-y: auto;
     }
-    .guide-title { font-weight: bold; font-size: 11px; color: #2c3e50; margin-bottom: 3px; display: flex; justify-content: space-between; }
-    .color-chips { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 4px; }
+    .guide-tabs { display: flex; gap: 4px; margin-bottom: 6px; }
+    .tab-btn {
+      flex: 1;
+      padding: 4px 6px;
+      background: #eceff1;
+      border: none;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: bold;
+      color: #546e7a;
+      cursor: pointer;
+    }
+    .tab-btn.active { background: #d84315; color: white; }
+
+    .color-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
     .chip {
-      padding: 2px 6px;
+      padding: 3px 6px;
       border-radius: 14px;
       font-size: 9.5px;
       font-weight: bold;
@@ -129,7 +142,7 @@
       border: 1px solid rgba(0,0,0,0.1);
     }
 
-    /* モーダル */
+    /* モーダル共通 */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -144,7 +157,7 @@
       padding: 14px;
       border-radius: 14px;
       width: 88%;
-      max-width: 360px;
+      max-width: 380px;
       max-height: 85vh;
       overflow-y: auto;
       font-size: 11.5px;
@@ -173,7 +186,7 @@
       text-align: center;
     }
 
-    /* ギャラリー一覧 */
+    /* ギャラリーグリッド */
     .gallery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
     .gallery-card { border: 1px solid #eee; border-radius: 8px; overflow: hidden; background: #fafafa; cursor: pointer; }
     .gallery-card img { width: 100%; height: 80px; object-fit: cover; display: block; }
@@ -226,22 +239,49 @@
 
   <button id="gpsBtn" class="gps-btn" title="現在地を表示">📍</button>
 
-  <!-- 下部早見表 -->
+  <!-- パワーアップ版・お宝早見表ドロワー -->
   <div class="guide-panel">
-    <div class="guide-title">
-      <span>⛏️ 地質とお宝石早見表</span>
-      <span id="measureResultText" style="color:#0277bd;"></span>
+    <div class="guide-tabs">
+      <button class="tab-btn active" id="tabGeo" onclick="switchGuideTab('geo')">🗺️ 地質の色から探す</button>
+      <button class="tab-btn" id="tabStone" onclick="switchGuideTab('stone')">💎 欲しい石から逆引き</button>
+      <button class="tab-btn" id="tabCode" onclick="switchGuideTab('code')">🔤 地質記号の解読</button>
     </div>
-    <div class="color-chips">
-      <div class="chip" style="background:#ffcdd2;" onclick="showGuide('granite')">🌸 花崗岩（水晶/長石）</div>
-      <div class="chip" style="background:#ffe0b2;" onclick="showGuide('rhyolite')">🍊 流紋岩（メノウ/碧玉）</div>
-      <div class="chip" style="background:#c8e6c9;" onclick="showGuide('serpentine')">🌿 蛇紋岩（ヒスイ/変成）</div>
-      <div class="chip" style="background:#bbdefb;" onclick="showGuide('sediment')">💧 堆積岩（化石/珪化木）</div>
-      <div class="chip" style="background:#e1bee7;" onclick="showGuide('chert')">🍇 チャート（赤石/放散虫）</div>
-      <div class="chip" style="background:#cfd8dc;" onclick="showGuide('basalt')">🪨 玄武岩（沸石/ペリドット）</div>
+
+    <!-- タブ1: 地質の色 -->
+    <div id="viewGeo">
+      <div class="color-chips">
+        <div class="chip" style="background:#ffcdd2;" onclick="showGuide('granite')">🌸 花崗岩（水晶/長石）</div>
+        <div class="chip" style="background:#ffe0b2;" onclick="showGuide('rhyolite')">🍊 流紋岩（メノウ/碧玉）</div>
+        <div class="chip" style="background:#c8e6c9;" onclick="showGuide('serpentine')">🌿 蛇紋岩（ヒスイ/変成）</div>
+        <div class="chip" style="background:#bbdefb;" onclick="showGuide('sediment')">💧 堆積岩（化石/珪化木）</div>
+        <div class="chip" style="background:#e1bee7;" onclick="showGuide('chert')">🍇 チャート（赤石/フリント）</div>
+        <div class="chip" style="background:#cfd8dc;" onclick="showGuide('basalt')">🪨 玄武岩（沸石/ペリドット）</div>
+      </div>
     </div>
-    <div id="guideContent" style="font-size:10px; line-height:1.4; color:#37474f; background:#fff; padding:4px 6px; border-radius:6px; border:1px solid #eee;">
-      地質の色を押すと、採れるお宝石と見分け方が表示されます！
+
+    <!-- タブ2: 欲しい石から逆引き -->
+    <div id="viewStone" style="display:none;">
+      <div class="color-chips">
+        <div class="chip" style="background:#fff3e0;" onclick="showStoneGuide('agate')">💎 メノウ・玉髄</div>
+        <div class="chip" style="background:#ede7f6;" onclick="showStoneGuide('quartz')">✨ 水晶・石英</div>
+        <div class="chip" style="background:#e8f5e9;" onclick="showStoneGuide('jade')">🟢 ヒスイ・ネフライト</div>
+        <div class="chip" style="background:#ffebee;" onclick="showStoneGuide('jasper')">🔴 碧玉（ジャスパー）・赤石</div>
+        <div class="chip" style="background:#e0f7fa;" onclick="showStoneGuide('wood')">🪵 珪化木・植物化石</div>
+        <div class="chip" style="background:#f3e5f5;" onclick="showStoneGuide('fossil')">🐚 貝化石・アンモナイト</div>
+        <div class="chip" style="background:#eceff1;" onclick="showStoneGuide('obsidian')">🖤 黒曜石（オブシディアン）</div>
+        <div class="chip" style="background:#fffde7;" onclick="showStoneGuide('garnet')">🍇 ガーネット・ざくろ石</div>
+      </div>
+    </div>
+
+    <!-- タブ3: 地質記号の解読 -->
+    <div id="viewCode" style="display:none; font-size:10px; line-height:1.4; color:#37474f; background:#fff; padding:6px; border-radius:6px; border:1px solid #eee; margin-bottom:4px;">
+      <b>🔤 記号の見方（例: N1_vas = 新第三紀前期 火山岩）</b><br>
+      ・<b>年代:</b> Q（第四紀/最新）、N（新第三紀）、Pg（古第三紀）、K（白亜紀/恐竜時代）、J（ジュラ紀）、P（ペルム紀）<br>
+      ・<b>岩相:</b> s（堆積岩/砂泥）、v・vas（火山岩/流紋・安山）、p・pam（深成岩/花崗岩）、m（変成岩/蛇紋・片岩）
+    </div>
+
+    <div id="guideContent" style="font-size:10.5px; line-height:1.45; color:#37474f; background:#fff; padding:6px 8px; border-radius:6px; border:1px solid #eee;">
+      上のボタンをタップすると、採れるお宝や現場での探し方アドバイスが表示されます！
     </div>
   </div>
 
@@ -334,21 +374,18 @@
   <div class="modal-overlay" id="infoModal">
     <div class="modal-box">
       <h3 style="color:#37474f;">ℹ️ 採集マナー・出典情報</h3>
-      
       <div style="background:#e8f5e9; padding:8px; border-radius:6px; margin-bottom:8px; color:#2e7d32; line-height:1.4;">
         <b>🌿 採集マナーとルール</b><br>
         ・自然公園法、河川法、地域の採集規制を順守してください。<br>
         ・特別保護地区や天然記念物指定地域（糸魚川ヒスイ峡等）、私有地、稼働鉱山への無断立ち入り・採集は禁止されています。<br>
         ・自然環境への負荷を避け、節度ある採集を心がけましょう。
       </div>
-
       <div style="background:#f5f5f5; padding:8px; border-radius:6px; color:#555; line-height:1.4; font-size:10px;">
         <b>🗺️ 出典・利用データ</b><br>
         ・産業技術総合研究所 地質調査総合センター「20万分の1日本シームレス地質図V2」<br>
         ・国土地理院「地理院タイル（淡色地図・航空写真・陰影起伏図・色別標高図）」<br>
         ※本ツールは個人研究および野外探索用オープンデータビューアです。
       </div>
-
       <div class="btn-row" style="margin-top:8px;">
         <button class="btn-act" style="background:#37474f;" onclick="closeModal('infoModal')">閉じる</button>
       </div>
@@ -419,29 +456,142 @@
       geologyLayer.setOpacity(e.target.value);
     });
 
-    // 2. プライバシー保護モード
+    // 2. 早見表タブ切り替え
+    function switchGuideTab(tab) {
+      document.getElementById('tabGeo').classList.remove('active');
+      document.getElementById('tabStone').classList.remove('active');
+      document.getElementById('tabCode').classList.remove('active');
+      document.getElementById('viewGeo').style.display = 'none';
+      document.getElementById('viewStone').style.display = 'none';
+      document.getElementById('viewCode').style.display = 'none';
+
+      if (tab === 'geo') {
+        document.getElementById('tabGeo').classList.add('active');
+        document.getElementById('viewGeo').style.display = 'block';
+      } else if (tab === 'stone') {
+        document.getElementById('tabStone').classList.add('active');
+        document.getElementById('viewStone').style.display = 'block';
+      } else if (tab === 'code') {
+        document.getElementById('tabCode').classList.add('active');
+        document.getElementById('viewCode').style.display = 'block';
+      }
+    }
+
+    // 地質ガイドデータベース
+    const guideDB = {
+      granite: {
+        title: '🌸 ピンク系：花崗岩・深成岩地帯（K_pam / N_pam）',
+        stones: '石英（水晶 / 煙水晶）、長石、雲母、電気石、ガーネット',
+        field: '【川原の見極め】白〜淡いピンクのツブツブした石が多い。水中でキラキラ反射する石や、六角柱の水晶結晶、割れた石英脈を探そう！下流の砂州には微小なガーネット（赤い砂）が集まることも。'
+      },
+      rhyolite: {
+        title: '🍊 オレンジ系：流紋岩・凝灰岩（N_vas / K_vas）',
+        stones: 'メノウ（瑪瑙）、玉髄（カルセドニー）、碧玉（ジャスパー）、オパール',
+        field: '【川原の見極め】石拾い大本命！気泡（晶洞）や隙間のある丸っこい転石を割るとメノウが現れます。水に濡らしてライトを透すと飴色に光る石を探そう！'
+      },
+      serpentine: {
+        title: '🌿 緑系：蛇紋岩・超苦鉄質岩帯（P_m / J_m）',
+        stones: 'ヒスイ（蛇紋岩帯に随伴）、ネフライト、滑石、クロム鉄鉱、磁鉄鉱',
+        field: '【川原の見極め】糸魚川などでヒスイを探す最重要地質。表面が油を塗ったように上品に輝き、ずっしり重い角ばった石を狙おう。磁石がつく石も多め！'
+      },
+      sediment: {
+        title: '💧 水色系：堆積岩層（砂岩・泥岩・礫岩）（N_s / Q_s）',
+        stones: '化石（貝・葉・アンモナイト）、珪化木（木の化石）、黄鉄鉱ノジュール',
+        field: '【川原の見極め】丸っこい団塊（ノジュール）や層状に割れる石に注目。木目がくっきり残った珪化木は水中で黒〜褐色にツヤめきます！'
+      },
+      chert: {
+        title: '🍇 紫・赤褐色系：チャート・珪質岩（P_ch / M_ch）',
+        stones: '赤石（レッドジャスパー）、フリント（火打石）、放散虫化石',
+        field: '【川原の見極め】モース硬度7で超硬い！川で削られても角が丸くなりにくく、赤・緑・黒の鮮やかな石。ハンマーで叩くと火花が出ます。'
+      },
+      basalt: {
+        title: '🪨 灰色・黒系：玄武岩・安山岩（Q_vas / N_vas）',
+        stones: 'ゼオライト（沸石）、方解石結晶、ペリドット（かんらん石）',
+        field: '【川原の見極め】黒〜濃灰色の溶岩。ぽこぽこ空いた穴（晶洞）の中に白い針状の沸石や、透明な方解石、黄緑色のペリドット粒が入っています！'
+      }
+    };
+
+    function showGuide(k) {
+      const d = guideDB[k];
+      if (d) {
+        document.getElementById('guideContent').innerHTML = `
+          <div style="font-weight:bold; color:#d84315; margin-bottom:2px;">${d.title}</div>
+          <div style="margin-bottom:3px;">💎 <b>期待できる石:</b> <span style="color:#1565c0;">${d.stones}</span></div>
+          <div style="font-size:10px; color:#555;">${d.field}</div>
+        `;
+      }
+    }
+
+    // 欲しい石逆引きデータベース
+    const stoneDB = {
+      agate: {
+        name: '💎 メノウ（瑪瑙）・玉髄',
+        targetGeo: '🍊 オレンジ系（流紋岩・デイサイト・酸性凝灰岩）',
+        tips: '【探し方】川原の浅瀬で濡れた状態のとき、光を当てると半透明に透ける飴色・白・赤の石。表面に縞模様や肉眼で見える気泡跡があれば大本命！下流の海岸まで削られずに残りやすい。'
+      },
+      quartz: {
+        name: '✨ 水晶（クォーツ）・煙水晶',
+        targetGeo: '🌸 ピンク系（花崗岩・ペグマタイト地帯）',
+        tips: '【探し方】ガラスを削るほど硬い六角柱状の結晶。花崗岩が風化した川原の砂利の中や、白く濁った石英脈の割れ目に透明な結晶が潜んでいます。'
+      },
+      jade: {
+        name: '🟢 ヒスイ（本翡翠）・ネフライト',
+        targetGeo: '🌿 緑色系（蛇紋岩帯・超塩基性岩帯）',
+        tips: '【探し方】他の石より明らかに比重が重く（ずっしり感）、角ばっていて表面にしっとりとした上品な油光沢（味の素のようなキラキラ）がある。緑だけでなく白や紫も！'
+      },
+      jasper: {
+        name: '🔴 碧玉（ジャスパー）・赤石',
+        targetGeo: '🍊 オレンジ系（流紋岩）または 🍇 紫系（チャート）',
+        tips: '【探し方】不透明で非常に硬い、鮮やかな赤・緑・黄色の艶やかな石。水に濡らすと鏡のようにツルツルと光る。佐渡の赤玉石などが有名。'
+      },
+      wood: {
+        name: '🪵 珪化木（木の化石）',
+        targetGeo: '💧 水色系（新第三紀の中新世・鮮新世 堆積岩層）',
+        tips: '【探し方】太古の木がシリカに置換された石。年輪や木肌の筋がそのまま残っており、叩くと金属のような硬い音がする。黒〜茶褐色で角ばった板状の石に多い。'
+      },
+      fossil: {
+        name: '🐚 貝化石・アンモナイト・葉化石',
+        targetGeo: '💧 水色系（頁岩・泥岩・砂岩などの海成層）',
+        tips: '【探し方】川原にある丸いジャガイモのような塊（ノジュール）や、層状にパリッと割れそうな泥岩をタガネやハンマーで丁寧に割ると出現します。'
+      },
+      obsidian: {
+        name: '🖤 黒曜石（オブシディアン）',
+        targetGeo: '🍊 オレンジ系（流紋岩質マグマが急冷した地帯）',
+        tips: '【探し方】漆黒の天然ガラス。貝殻状の鋭い割れ口を持ち、光を透すと端が薄く透ける。矢じりにも使われた硬質ガラス。'
+      },
+      garnet: {
+        name: '🍇 ガーネット（ざくろ石）',
+        targetGeo: '🌸 花崗岩 または 🌿 結晶片岩帯（三波川変成帯）',
+        tips: '【探し方】濃い赤〜赤紫色の12面体・24面体の微小結晶。川原の砂利のくぼみや、岩石の割れ目、砂州の重い砂が集まる場所にルビー色に光る粒を探そう！'
+      }
+    };
+
+    function showStoneGuide(k) {
+      const d = stoneDB[k];
+      if (d) {
+        document.getElementById('guideContent').innerHTML = `
+          <div style="font-weight:bold; color:#d84315; margin-bottom:2px;">${d.name}</div>
+          <div style="margin-bottom:3px;">🎯 <b>狙う地質:</b> <span style="color:#2e7d32;">${d.targetGeo}</span></div>
+          <div style="font-size:10px; color:#455a64;">${d.tips}</div>
+        `;
+      }
+    }
+
+    // 3. プライバシー保護
     let isPrivacy = false;
     function togglePrivacy() {
       isPrivacy = !isPrivacy;
       const btn = document.getElementById('privacyBtn');
-      if (isPrivacy) {
-        btn.innerText = '🔒 共有保護: ON';
-        btn.classList.add('active');
-      } else {
-        btn.innerText = '🔒 共有保護: OFF';
-        btn.classList.remove('active');
-      }
+      btn.innerText = isPrivacy ? '🔒 共有保護: ON' : '🔒 共有保護: OFF';
+      btn.classList.toggle('active', isPrivacy);
       loadLogs();
     }
 
     function formatCoord(val) {
-      if (isPrivacy) {
-        return Math.floor(val) + '.' + String(Math.abs(val) % 1).slice(2, 4) + '***';
-      }
-      return val.toFixed(4);
+      return isPrivacy ? (Math.floor(val) + '.' + String(Math.abs(val) % 1).slice(2, 4) + '***') : val.toFixed(4);
     }
 
-    // 3. スリープ防止
+    // 4. スリープ防止
     let wakeLock = null;
     async function toggleWakeLock() {
       if ('wakeLock' in navigator) {
@@ -456,14 +606,11 @@
               document.getElementById('wakeLockBtn').classList.remove('active');
             });
           } catch (e) { alert('起動失敗: ' + e.message); }
-        } else {
-          wakeLock.release();
-          wakeLock = null;
-        }
+        } else { wakeLock.release(); wakeLock = null; }
       } else { alert('非対応端末です'); }
     }
 
-    // 4. コンパス・日没・潮汐
+    // 5. コンパス・日没・潮汐
     if (window.DeviceOrientationEvent) {
       window.addEventListener('deviceorientation', (e) => {
         let heading = e.webkitCompassHeading || (360 - e.alpha);
@@ -473,7 +620,6 @@
 
     function updateSunAndTide(lat, lng) {
       const now = new Date();
-      // 日没計算
       const start = new Date(now.getFullYear(), 0, 0);
       const day = Math.floor((now - start) / 86400000);
       const gamma = 2 * Math.PI / 365 * (day - 1);
@@ -489,7 +635,6 @@
         document.getElementById('sunTimeText').innerText = `🌇 日没: ${String(sH).padStart(2,'0')}:${String(sM).padStart(2,'0')}`;
       }
 
-      // 月齢・潮汐計算
       const baseDate = new Date(2000, 0, 6, 18, 14);
       const daysSince = (now - baseDate) / 86400000;
       const moonAge = (daysSince % 29.530588853).toFixed(1);
@@ -503,7 +648,7 @@
     }
     updateSunAndTide(37.4, 139.0);
 
-    // 5. 距離計測
+    // 6. 距離計測
     let isMeasuring = false;
     let measurePoints = [];
     let measureLine = L.polyline([], { color: '#0288d1', weight: 4, dashArray: '4, 4' }).addTo(map);
@@ -511,22 +656,13 @@
     function toggleMeasure() {
       isMeasuring = !isMeasuring;
       const btn = document.getElementById('measureBtn');
-      if (isMeasuring) {
-        btn.innerText = '📏 計測中 (タップ)';
-        btn.classList.add('active');
-        measurePoints = [];
-        measureLine.setLatLngs([]);
-        document.getElementById('measureResultText').innerText = '地図をタップして計測';
-      } else {
-        btn.innerText = '📏 距離計測: OFF';
-        btn.classList.remove('active');
-        measurePoints = [];
-        measureLine.setLatLngs([]);
-        document.getElementById('measureResultText').innerText = '';
-      }
+      btn.innerText = isMeasuring ? '📏 計測中 (タップ)' : '📏 距離計測: OFF';
+      btn.classList.toggle('active', isMeasuring);
+      measurePoints = [];
+      measureLine.setLatLngs([]);
     }
 
-    // 6. GPS軌跡
+    // 7. GPS軌跡
     let isTracking = false;
     let watchId = null;
     let trackLatLngs = [];
@@ -556,7 +692,7 @@
       }
     });
 
-    // 7. 採集ログ＆トレカ画像生成
+    // 8. 採集ログ＆トレカ画像生成
     const logLayer = L.layerGroup().addTo(map);
     let selectedLatLng = null;
 
@@ -573,7 +709,7 @@
             ${item.photo ? `<img src="${item.photo}" style="width:100%; border-radius:6px; margin:4px 0; max-height:140px; object-fit:cover;">` : ''}
             <div>${item.memo}</div>
             <div class="btn-row">
-              <button style="background:#e65100; color:white; border:none; padding:4px 6px; border-radius:4px; font-size:9.5px; cursor:pointer;" onclick="generateCard(${index})">🎴 トレカ画像生成</button>
+              <button style="background:#e65100; color:white; border:none; padding:4px 6px; border-radius:4px; font-size:9.5px; cursor:pointer;" onclick="generateCard(${index})">🎴 トレカ生成</button>
               <button style="background:#d32f2f; color:white; border:none; padding:4px 6px; border-radius:4px; font-size:9.5px; cursor:pointer;" onclick="deleteLog(${index})">削除</button>
             </div>
           </div>
@@ -581,71 +717,39 @@
       });
     }
 
-    // トレカ風画像（Canvas）レンダリング＆ダウンロード
     function generateCard(index) {
       const logs = JSON.parse(localStorage.getItem('stone_logs') || '[]');
       const item = logs[index];
       if (!item) return;
 
       const canvas = document.getElementById('cardCanvas');
-      canvas.width = 600;
-      canvas.height = 840;
+      canvas.width = 600; canvas.height = 840;
       const ctx = canvas.getContext('2d');
 
-      // 背景グラデーション
       const bgGrad = ctx.createLinearGradient(0, 0, 0, 840);
-      bgGrad.addColorStop(0, '#1a237e');
-      bgGrad.addColorStop(1, '#0d47a1');
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, 600, 840);
+      bgGrad.addColorStop(0, '#1a237e'); bgGrad.addColorStop(1, '#0d47a1');
+      ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, 600, 840);
 
-      // 外枠
-      ctx.strokeStyle = '#ffd700';
-      ctx.lineWidth = 10;
-      ctx.strokeRect(15, 15, 570, 810);
+      ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 10; ctx.strokeRect(15, 15, 570, 810);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 34px sans-serif'; ctx.fillText(`💎 ${item.name}`, 40, 75);
+      ctx.fillStyle = '#ffd54f'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('MINERAL COLLECTOR CARD', 40, 110);
 
-      // タイトルヘッダー
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 34px sans-serif';
-      ctx.fillText(`💎 ${item.name}`, 40, 75);
-
-      ctx.fillStyle = '#ffd54f';
-      ctx.font = 'bold 20px sans-serif';
-      ctx.fillText('MINERAL COLLECTOR CARD', 40, 110);
-
-      // 写真描画
       const renderRest = (imgObj) => {
-        if (imgObj) {
-          ctx.drawImage(imgObj, 40, 130, 520, 390);
-        } else {
-          ctx.fillStyle = '#263238';
-          ctx.fillRect(40, 130, 520, 390);
-          ctx.fillStyle = '#90a4ae';
-          ctx.font = '48px sans-serif';
-          ctx.fillText('NO IMAGE', 190, 340);
+        if (imgObj) ctx.drawImage(imgObj, 40, 130, 520, 390);
+        else {
+          ctx.fillStyle = '#263238'; ctx.fillRect(40, 130, 520, 390);
+          ctx.fillStyle = '#90a4ae'; ctx.font = '48px sans-serif'; ctx.fillText('NO IMAGE', 190, 340);
         }
-
-        // 情報ボックス
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-        ctx.fillRect(40, 540, 520, 240);
-        ctx.strokeStyle = '#b0bec5';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(40, 540, 520, 240);
-
-        ctx.fillStyle = '#263238';
-        ctx.font = 'bold 22px sans-serif';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)'; ctx.fillRect(40, 540, 520, 240);
+        ctx.strokeStyle = '#b0bec5'; ctx.lineWidth = 2; ctx.strokeRect(40, 540, 520, 240);
+        ctx.fillStyle = '#263238'; ctx.font = 'bold 22px sans-serif';
         ctx.fillText(`📅 採取日: ${item.date}`, 60, 580);
         ctx.fillText(`📍 座標: ${formatCoord(item.lat)}, ${formatCoord(item.lng)}`, 60, 620);
-
         ctx.font = '20px sans-serif';
         ctx.fillText(`📝 メモ: ${item.memo || '特記事項なし'}`, 60, 665);
-
-        // クレジット
-        ctx.fillStyle = '#78909c';
-        ctx.font = '14px sans-serif';
+        ctx.fillStyle = '#78909c'; ctx.font = '14px sans-serif';
         ctx.fillText('先生専用・石拾い地質マップ 探査アーカイブ', 60, 755);
 
-        // ダウンロード
         const a = document.createElement('a');
         a.href = canvas.toDataURL('image/png');
         a.download = `StoneCard_${item.name}_${item.date}.png`;
@@ -653,13 +757,10 @@
       };
 
       if (item.photo) {
-        const img = new Image();
-        img.crossOrigin = 'Anonymous';
+        const img = new Image(); img.crossOrigin = 'Anonymous';
         img.onload = () => renderRest(img);
         img.src = item.photo;
-      } else {
-        renderRest(null);
-      }
+      } else { renderRest(null); }
     }
 
     function openGalleryModal() {
@@ -669,20 +770,16 @@
       if (logs.length === 0) {
         container.innerHTML = '<div style="grid-column:span 2; color:#888; text-align:center; padding:15px;">まだログがありません。</div>';
       } else {
-        logs.forEach((item, idx) => {
+        logs.forEach((item) => {
           const card = document.createElement('div');
           card.className = 'gallery-card';
           card.innerHTML = `
             ${item.photo ? `<img src="${item.photo}">` : '<div style="height:80px; background:#ddd; display:flex; align-items:center; justify-content:center; color:#888; font-size:20px;">💎</div>'}
             <div class="gallery-card-info">
-              <b>${item.name}</b><br>
-              <span style="color:#888; font-size:9px;">${item.date}</span>
+              <b>${item.name}</b><br><span style="color:#888; font-size:9px;">${item.date}</span>
             </div>
           `;
-          card.onclick = () => {
-            closeModal('galleryModal');
-            map.setView([item.lat, item.lng], 16);
-          };
+          card.onclick = () => { closeModal('galleryModal'); map.setView([item.lat, item.lng], 16); };
           container.appendChild(card);
         });
       }
@@ -696,14 +793,6 @@
       if (isMeasuring) {
         measurePoints.push([lat, lng]);
         measureLine.setLatLngs(measurePoints);
-        if (measurePoints.length > 1) {
-          let totalDist = 0;
-          for (let i = 0; i < measurePoints.length - 1; i++) {
-            totalDist += L.latLng(measurePoints[i]).distanceTo(L.latLng(measurePoints[i+1]));
-          }
-          const text = totalDist >= 1000 ? `${(totalDist / 1000).toFixed(2)} km` : `${Math.round(totalDist)} m`;
-          document.getElementById('measureResultText').innerText = `直線: ${text}`;
-        }
         return;
       }
 
@@ -776,7 +865,7 @@
 
     loadLogs();
 
-    // 8. 簡易石鑑定
+    // 9. 簡易石鑑定
     function runDiagnosis() {
       const trans = document.getElementById('diagTrans').value;
       const luster = document.getElementById('diagLuster').value;
@@ -800,7 +889,7 @@
       resDiv.innerHTML = '<b style="color:#6a1b9a;">🔍 候補:</b><br>' + cand.join('<br><br>');
     }
 
-    // 9. データバックアップ
+    // 10. データバックアップ
     function exportLogs() {
       const logs = localStorage.getItem('stone_logs') || '[]';
       const a = document.createElement('a');
@@ -826,20 +915,6 @@
         } catch (err) { alert('ファイルが無効です'); }
       };
       reader.readAsText(file);
-    }
-
-    // 10. お宝ガイド
-    const guideDB = {
-      granite: { title: '🌸 花崗岩地帯', stones: '水晶、長石、雲母、ガーネット', desc: 'キラキラ光る鉱物や水晶の結晶を探そう！' },
-      rhyolite: { title: '🍊 流紋岩地帯', stones: 'メノウ（瑪瑙）、玉髄、碧玉、オパール', desc: '石拾い大本命！気泡のある転石に縞模様のメノウが眠ります。' },
-      serpentine: { title: '🌿 蛇紋岩帯', stones: 'ヒスイ、ネフライト、滑石、磁鉄鉱', desc: '緑色でずっしり重みのある石を探そう。' },
-      sediment: { title: '💧 堆積岩層', stones: '化石、珪化木、黄鉄鉱', desc: '丸い団塊（ノジュール）を割ると化石が出ることも！' },
-      chert: { title: '🍇 チャート層', stones: '赤石（ジャスパー）、フリント', desc: '角が立って硬く艶やかな石。' },
-      basalt: { title: '🪨 玄武岩帯', stones: 'ゼオライト（沸石）、方解石、ペリドット', desc: '溶岩の穴ぼこに白い結晶が入っています。' }
-    };
-    function showGuide(k) {
-      const d = guideDB[k];
-      if (d) document.getElementById('guideContent').innerHTML = `<b>${d.title}</b><br>💎 <b>期待できる石:</b> ${d.stones}<br><span style="color:#666;">${d.desc}</span>`;
     }
 
     // 11. スマート・オフライン保存
