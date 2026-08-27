@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>石拾い地質マップ【Pro版】</title>
+  
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#d84315">
+
+  <link rel="manifest" href='data:application/manifest+json,{"name":"石拾い地質マップ Pro","short_name":"石拾いPro","start_url":".","display":"standalone","background_color":"#ffffff","theme_color":"#d84315","icons":[{"src":"https://maps.gsi.go.jp/favicon.ico","sizes":"192x192","type":"image/png"}]}'>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+
+  <style>
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; background: #000; }
+    #map { width: 100%; height: 100%; }
+
+    /* 左上: 2段マルチ情報バッジ */
+    .info-widget {
+      position: absolute;
+      top: max(20px, env(safe-area-inset-top, 20px));
+      left: 12px;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      padding: 5px 9px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.22);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 205px;
+    }
+
+    .compass-container {
+      width: 26px;
+      height: 26px;
+      position: relative;
+      border-radius: 50%;
+      border: 1.5px solid #455a64;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .compass-needle {
+      width: 4px;
+      height: 22px;
+      position: absolute;
+      transition: transform 0.15s ease-out;
+      transform-origin: center center;
+    }
+    .needle-n {
+      width: 0; height: 0;
+      border-left: 2px solid transparent;
+      border-right: 2px solid transparent;
+      border-bottom: 11px solid #e53935;
+      margin: 0 auto;
+    }
+    .needle-s {
+      width: 0; height: 0;
+      border-left: 2px solid transparent;
+      border-right: 2px solid transparent;
+      border-top: 11px solid #90a4ae;
+      margin: 0 auto;
+    }
+
+    .info-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 10px;
+      line-height: 1.25;
+      font-weight: bold;
+      color: #333;
+      white-space: nowrap;
+    }
+    .info-line-top { display: flex; align-items: center; gap: 4px; }
+    .info-line-bottom { display: flex; align-items: center; gap: 4px; font-size: 9.5px; color: #555; }
+
+    /* 右上ツールバー */
+    .top-right-bar {
+      position: absolute;
+      top: max(20px, env(safe-area-inset-top, 20px));
+      right: 12px;
+      z-index: 1000;
+      display: flex;
+      gap: 5px;
+    }
+    .action-fab {
+      background: #ffffff;
+      color: #333;
+      border: none;
+      border-radius: 20px;
+      padding: 6px 9px;
+      font-size: 11px;
+      font-weight: bold;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .pro-badge {
+      background: linear-gradient(135deg, #ffd700, #ff8f00);
+      color: #000;
+      padding: 2px 6px;
+      border-radius: 8px;
+      font-size: 9px;
+      font-weight: 900;
+    }
+
+    /* GPSボタン */
+    .gps-btn {
+      position: absolute;
+      bottom: 54px;
+      right: 14px;
+      z-index: 1000;
+      background: #ff5722;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      font-size: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+
+    /* 下部ボトムシート */
+    .bottom-sheet {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 999;
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.15);
+      transition: max-height 0.3s ease;
+      max-height: 42px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .bottom-sheet.open { max-height: 48vh; }
+    .sheet-header {
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: bold;
+      color: #2c3e50;
+      border-bottom: 1px solid #eee;
+    }
+    .sheet-content { padding: 8px 12px 14px; overflow-y: auto; }
+
+    .guide-tabs { display: flex; gap: 4px; margin-bottom: 6px; }
+    .tab-btn {
+      flex: 1;
+      padding: 5px;
+      background: #eceff1;
+      border: none;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: bold;
+      color: #546e7a;
+      cursor: pointer;
+    }
+    .tab-btn.active { background: #d84315; color: white; }
+    .color-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+    .chip {
+      padding: 4px 8px;
+      border-radius: 14px;
+      font-size: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+
+    /* モーダル */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.55);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-box {
+      background: white;
+      padding: 16px;
+      border-radius: 14px;
+      width: 86%;
+      max-width: 360px;
+      max-height: 80vh;
+      overflow-y: auto;
+      font-size: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+    .modal-box h3 { margin: 0 0 10px; font-size: 15px; color: #2c3e50; }
+    .modal-box input, .modal-box textarea, .modal-box select {
+      width: 100%;
+      box-sizing: border-box;
+      margin: 4px 0 8px;
+      padding: 6px 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+    .btn-row { display: flex; gap: 6px; margin-top: 8px; }
+    .btn-act {
+      flex: 1;
+      padding: 8px;
+      border-radius: 6px;
+      border: none;
+      color: white;
+      font-weight: bold;
+      font-size: 11px;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .menu-item {
+      padding: 10px 8px;
+      background: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: bold;
+      color: #333;
+      text-align: center;
+      cursor: pointer;
+    }
+    .menu-item.active { background: #ffebee; border-color: #e53935; color: #c62828; }
+    .menu-item.pro-toggle { background: #fff8e1; border-color: #ffd54f; }
+
+    .gallery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+    .gallery-card { border: 1px solid #eee; border-radius: 8px; overflow: hidden; background: #fafafa; cursor: pointer; }
+    .gallery-card img { width: 100%; height: 80px; object-fit: cover; display: block; }
+    .gallery-card-info { padding: 4px; font-size: 9.5px; }
+  </style>
+</head>
+<body>
+
+  <div id="map"></div>
+
+  <!-- 左上: 2段マルチ情報ウィジェット -->
+  <div class="info-widget">
+    <div class="compass-container" onclick="requestOrientationPermission()" title="コンパス">
+      <div id="compassNeedle" class="compass-needle">
+        <div class="needle-n"></div>
+        <div class="needle-s"></div>
+      </div>
+    </div>
+    <div class="info-lines">
+      <div class="info-line-top">
+        <span id="headingText" style="color:#d84315;">北 (0°)</span>
+        <span style="color:#ccc;">|</span>
+        <span id="zoomText" style="color:#455a64;">Lv.10</span>
+      </div>
+      <div class="info-line-bottom">
+        <span id="sunTimeText">🌇 18:22</span>
+        <span style="color:#ccc;">|</span>
+        <span id="tideText" style="color:#0277bd;">🌊 大潮 (15.2)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 右上: 全画面 ＆ 設定メニュー -->
+  <div class="top-right-bar">
+    <button class="action-fab" onclick="toggleFullScreen()">⛶ 全画面</button>
+    <button class="action-fab" onclick="openModal('toolsModal')">
+      ⚙️ 設定 <span class="pro-badge">PRO</span>
+    </button>
+  </div>
+
+  <!-- 右下: GPSボタン -->
+  <button id="gpsBtn" class="gps-btn" title="現在地を表示">📍</button>
+
+  <!-- 下部: 引き出し式 お宝早見表 -->
+  <div class="bottom-sheet" id="bottomSheet">
+    <div class="sheet-header" onclick="toggleBottomSheet()">
+      <span id="sheetHeaderTitle">⛏️ お宝早見表＆転石ゾーン</span>
+      <span id="sheetArrow">▲</span>
+    </div>
+    <div class="sheet-content">
+      <div class="guide-tabs">
+        <button class="tab-btn active" id="tabHot" onclick="switchGuideTab('hot')">🔥 転石ゾーン一覧</button>
+        <button class="tab-btn" id="tabGeo" onclick="switchGuideTab('geo')">🗺️ 地質の色</button>
+        <button class="tab-btn" id="tabStone" onclick="switchGuideTab('stone')">💎 石から逆引き</button>
+      </div>
+
+      <div id="viewHot">
+        <div style="font-size:10px; color:#555; margin-bottom:4px;">地図上に色塗りされた転石帯をタップすると詳細が表示されます。</div>
+        <div class="color-chips">
+          <div class="chip" style="background:#fff9c4; border-color:#fbc02d;" onclick="focusZone('kuji')">🟠 久慈川（メノウ/玉川）</div>
+          <div class="chip" style="background:#fffde7; border-color:#fbc02d;" onclick="focusZone('abe')">🟡 安倍川（砂金/重砂）</div>
+          <div class="chip" style="background:#e8f5e9; border-color:#81c784;" onclick="focusZone('itoigawa')">🟢 糸魚川海岸（ヒスイ漂着）</div>
+          <div class="chip" style="background:#ede7f6; border-color:#b39ddb;" onclick="focusZone('futagami')">🟣 二上山（サファイア/柘榴石）</div>
+          <div class="chip" style="background:#e0f7fa; border-color:#80deea;" onclick="focusZone('sado')">🔴 佐渡・羽茂（赤玉石/砂金）</div>
+        </div>
+      </div>
+
+      <div id="viewGeo" style="display:none;">
+        <div class="color-chips">
+          <div class="chip" style="background:#ffcdd2;" onclick="showGuide('granite')">🌸 花崗岩（水晶/長石）</div>
+          <div class="chip" style="background:#ffe0b2;" onclick="showGuide('rhyolite')">🍊 流紋岩（メノウ/碧玉）</div>
+          <div class="chip" style="background:#c8e6c9;" onclick="showGuide('serpentine')">🌿 蛇紋岩（ヒスイ/変成）</div>
+          <div class="chip" style="background:#bbdefb;" onclick="showGuide('sediment')">💧 堆積岩（化石/珪化木）</div>
+          <div class="chip" style="background:#e1bee7;" onclick="showGuide('chert')">🍇 チャート（赤石/フリント）</div>
+          <div class="chip" style="background:#cfd8dc;" onclick="showGuide('basalt')">🪨 玄武岩（沸石/ペリドット）</div>
+        </div>
+      </div>
+
+      <div id="viewStone" style="display:none;">
+        <div class="color-chips">
+          <div class="chip" style="background:#fff3e0;" onclick="showStoneGuide('agate')">💎 メノウ・玉髄</div>
+          <div class="chip" style="background:#ede7f6;" onclick="showStoneGuide('quartz')">✨ 水晶・石英</div>
+          <div class="chip" style="background:#e8f5e9;" onclick="showStoneGuide('jade')">🟢 ヒスイ・ネフライト</div>
+          <div class="chip" style="background:#ffebee;" onclick="showStoneGuide('jasper')">🔴 碧玉（ジャスパー）</div>
+          <div class="chip" style="background:#e0f7fa;" onclick="showStoneGuide('wood')">🪵 珪化木</div>
+          <div class="chip" style="background:#fffde7;" onclick="showStoneGuide('gold')">🪙 砂金・金鉱石</div>
+          <div class="chip" style="background:#ede7f6;" onclick="showStoneGuide('sapphire')">💎 サファイア・柘榴石</div>
+        </div>
+      </div>
+
+      <div id="guideContent" style="font-size:11px; line-height:1.45; color:#37474f; background:#f9f9f9; padding:8px; border-radius:6px; margin-top:4px;">
+        ボタンをタップすると、採れるお宝や現場での探し方アドバイスが表示されます！
+      </div>
+    </div>
+  </div>
+
+  <!-- モーダル: 設定メニュー -->
+  <div class="modal-overlay" id="toolsModal">
+    <div class="modal-box">
+      <h3>⚙️ Pro版 設定・ツール</h3>
+      
+      <label><b>🗺️ 地図レイヤー</b></label>
+      <select id="baseMapSelect" style="margin-bottom:6px;">
+        <option value="photo">航空写真（川原・足場）</option>
+        <option value="hillshade">陰影起伏図（崖・段丘）</option>
+        <option value="relief">色別標高図（高低差）</option>
+        <option value="pale">淡色地図（スッキリ）</option>
+        <option value="std">標準地図</option>
+      </select>
+
+      <label><b>地質図の濃さ: <span id="opacityVal">65%</span></b></label>
+      <input id="opacitySlider" type="range" min="0" max="1" step="0.05" value="0.65">
+
+      <div class="menu-grid">
+        <div id="hotzoneToggleBtn" class="menu-item pro-toggle" onclick="toggleHotzones()">🔥 転石ゾーン: ON</div>
+        <div id="wakeLockBtn" class="menu-item" onclick="toggleWakeLock()">💡 スリープ防止: OFF</div>
+        <div id="trackBtn" class="menu-item">🐾 軌跡記録: OFF</div>
+        <div id="privacyBtn" class="menu-item" onclick="togglePrivacy()">🔒 共有保護: OFF</div>
+        <div id="measureBtn" class="menu-item" onclick="toggleMeasure()">📏 距離計測: OFF</div>
+        <div class="menu-item" onclick="openModal('galleryModal')">📖 お宝図鑑</div>
+        <div class="menu-item" onclick="openModal('diagModal')">🔍 拾った石鑑定</div>
+        <div class="menu-item" onclick="openModal('radarModal')">⛈️ 雨雲・河川</div>
+        <div class="menu-item" onclick="openModal('dataModal')">💾 ログ管理・写真</div>
+      </div>
+
+      <div style="margin-top:10px; padding:8px; background:#e0f2f1; border-radius:8px; text-align:center;">
+        <button id="downloadTilesBtn" style="background:#00897b; color:white; border:none; padding:8px 12px; border-radius:6px; font-weight:bold; width:100%; cursor:pointer;">📥 表示範囲をオフライン保存</button>
+        <div id="cacheStatus" style="font-size:9.5px; color:#555; margin-top:4px;">キャッシュ: 0枚</div>
+      </div>
+
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="btn-act" style="background:#455a64;" onclick="openModal('infoModal')">ℹ️ 出典・マナー</button>
+        <button class="btn-act" style="background:#888;" onclick="closeModal('toolsModal')">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- モーダル: 採集ログ -->
+  <div class="modal-overlay" id="logModal">
+    <div class="modal-box">
+      <h3 style="color:#2e7d32;">💎 採集ログを記録</h3>
+      <label><b>石・鉱物の名前</b></label>
+      <input type="text" id="logStoneName" placeholder="例: 瑪瑙、砂金、サファイア">
+
+      <label><b>メモ</b></label>
+      <textarea id="logMemo" rows="2" placeholder="例: 川原の浅瀬、砂州の内側で発見。"></textarea>
+
+      <label><b>写真（位置情報自動解析対応）</b></label>
+      <input type="file" id="logPhoto" accept="image/*" onchange="checkExifLocation(this)">
+      <div id="exifAlert" style="font-size:10px; color:#2e7d32; display:none; margin-bottom:4px;">📍 写真からGPS位置情報を検出しました！</div>
+
+      <div class="btn-row">
+        <button class="btn-act" style="background:#888;" onclick="closeModal('logModal')">キャンセル</button>
+        <button class="btn-act" style="background:#2e7d32;" onclick="saveCurrentLog()">保存する</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- モーダル: マイコレクション図鑑 -->
+  <div class="modal-overlay" id="galleryModal">
+    <div class="modal-box">
+      <h3 style="color:#e65100;">📖 マイコレクション図鑑</h3>
+      <div id="galleryContainer" class="gallery-grid"></div>
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="btn-act" style="background:#888;" onclick="closeModal('galleryModal')">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- モーダル: 鑑定 -->
+  <div class="modal-overlay" id="diagModal">
+    <div class="modal-box">
+      <h3 style="color:#6a1b9a;">🔍 拾った石の簡易チェッカー</h3>
+      <label><b>① 透明感</b></label>
+      <select id="diagTrans">
+        <option value="high">光をよく透す（透明・半透明）</option>
+        <option value="low">光をまったく透さない（不透明）</option>
+      </select>
+      <label><b>② 光沢・質感</b></label>
+      <select id="diagLuster">
+        <option value="glass">ガラスのようにツルツル / 飴色</option>
+        <option value="waxy">ろうそくのようなしっとり感</option>
+        <option value="rough">ツブツブ・ザラザラ</option>
+        <option value="metallic">金属のようなギラギラ光沢</option>
+      </select>
+      <label><b>③ 硬さ</b></label>
+      <select id="diagHard">
+        <option value="hard">非常に硬い（ガラスに傷がつく）</option>
+        <option value="soft">釘や硬貨で傷がつく</option>
+      </select>
+      <label><b>④ 色合い</b></label>
+      <select id="diagColor">
+        <option value="white">白・透明・灰色</option>
+        <option value="orange">オレンジ・赤褐色・黄色</option>
+        <option value="green">緑色・深緑色</option>
+        <option value="stripe">縞模様や同心円模様</option>
+        <option value="black">漆黒・濃い黒</option>
+      </select>
+      <div class="btn-row">
+        <button class="btn-act" style="background:#888;" onclick="closeModal('diagModal')">閉じる</button>
+        <button class="btn-act" style="background:#6a1b9a;" onclick="runDiagnosis()">判定する！</button>
+      </div>
+      <div id="diagResult" style="margin-top:8px; padding:8px; background:#f3e5f5; border-radius:6px; display:none;"></div>
+    </div>
+  </div>
+
+  <!-- モーダル: データ管理 -->
+  <div class="modal-overlay" id="dataModal">
+    <div class="modal-box">
+      <h3 style="color:#1565c0;">💾 データ管理・写真一括配置</h3>
+      <div style="background:#e3f2fd; padding:8px; border-radius:6px; margin-bottom:8px;">
+        <b>📸 写真から一括ピン立て</b>
+        <div style="font-size:10px; color:#555; margin-bottom:4px;">位置情報付き写真を選ぶだけで自動配置！</div>
+        <input type="file" id="batchPhotoInput" accept="image/*" multiple onchange="batchImportPhotos(event)">
+      </div>
+      <button class="btn-act" style="background:#1565c0; width:100%; margin-bottom:6px;" onclick="exportLogs()">📤 ログをJSON保存</button>
+      <label><b>📥 バックアップを復元</b></label>
+      <input type="file" id="importFile" accept=".json" onchange="importLogs(event)">
+      <div class="btn-row">
+        <button class="btn-act" style="background:#888;" onclick="closeModal('dataModal')">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- モーダル: トレカ -->
+  <div class="modal-overlay" id="cardThemeModal">
+    <div class="modal-box">
+      <h3 style="color:#e65100;">🎴 トレカデザインを選択</h3>
+      <select id="cardThemeSelect">
+        <option value="gold">🏆 SSRゴールド（豪華ホロ風）</option>
+        <option value="vintage">📜 レトロ博物館標本ラベル風</option>
+        <option value="cyber">🌌 サイバー鉱物分析カード</option>
+      </select>
+      <div class="btn-row">
+        <button class="btn-act" style="background:#888;" onclick="closeModal('cardThemeModal')">キャンセル</button>
+        <button class="btn-act" style="background:#e65100;" onclick="renderAndDownloadCard()">生成＆保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- モーダル: 雨雲防災 -->
+  <div class="modal-overlay" id="radarModal">
+    <div class="modal-box">
+      <h3 style="color:#0097a7;">⛈️ 雨雲レーダー・河川防災</h3>
+      <p style="color:#555; font-size:11px; margin:0 0 8px;">上流の雨雲状況をチェックして急な増水に備えましょう。</p>
+      <a href="https://www.jma.go.jp/bosai/nowc/" target="_blank" class="btn-act" style="display:block; background:#0288d1; text-decoration:none; margin-bottom:6px;">📡 気象庁 雨雲の動き ↗</a>
+      <a href="https://www.river.go.jp/" target="_blank" class="btn-act" style="display:block; background:#00796b; text-decoration:none; margin-bottom:8px;">🌊 国交省 川の防災情報 ↗</a>
+      <div class="btn-row">
+        <button class="btn-act" style="background:#888;" onclick="closeModal('radarModal')">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- モーダル: マナー・出典 -->
+  <div class="modal-overlay" id="infoModal">
+    <div class="modal-box">
+      <h3 style="color:#37474f;">ℹ️ 採集マナー・出典情報</h3>
+      <div style="background:#e8f5e9; padding:8px; border-radius:6px; margin-bottom:8px; color:#2e7d32; line-height:1.4; font-size:11px;">
+        <b>🌿 採集マナーとルール</b><br>
+        ・自然公園法、河川法、地域の採集規制を順守してください。<br>
+        ・特別保護地区や天然記念物指定地域、私有地への無断立ち入り・採集は禁止されています。
+      </div>
+      <div style="background:#f5f5f5; padding:8px; border-radius:6px; color:#555; line-height:1.4; font-size:10px;">
+        <b>🗺️ 出典・利用データ</b><br>
+        ・産総研「20万分の1日本シームレス地質図V2」<br>
+        ・国土地理院「地理院タイル」
+      </div>
+      <div class="btn-row" style="margin-top:8px;">
+        <button class="btn-act" style="background:#37474f;" onclick="closeModal('infoModal')">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <canvas id="cardCanvas" style="display:none;"></canvas>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // 1. フルスクリーン
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+
+    // 2. IndexedDBキャッシュ
+    const tileDB = localforage.createInstance({ name: 'stone_map_pro_tiles' });
+
+    const CachedTileLayer = L.TileLayer.extend({
+      createTile: function(coords, done) {
+        const tile = document.createElement('img');
+        const url = this.getTileUrl(coords);
+        const storageKey = `${this.options.layerKey}_${coords.z}_${coords.x}_${coords.y}`;
+
+        tileDB.getItem(storageKey).then(blob => {
+          if (blob) {
+            tile.src = URL.createObjectURL(blob);
+            done(null, tile);
+          } else {
+            tile.crossOrigin = 'Anonymous';
+            tile.src = url;
+            L.DomEvent.on(tile, 'load', () => {
+              done(null, tile);
+              fetch(url).then(r => r.blob()).then(b => tileDB.setItem(storageKey, b)).catch(()=>{});
+            });
+            L.DomEvent.on(tile, 'error', (err) => done(err, tile));
+          }
+        }).catch(() => { tile.src = url; done(null, tile); });
+        return tile;
+      }
+    });
+
+    const baseLayers = {
+      photo: new CachedTileLayer('https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg', { maxZoom: 18, layerKey: 'photo', attribution: '&copy; 国土地理院' }),
+      hillshade: new CachedTileLayer('https://cyberjapandata.gsi.go.jp/xyz/hillshademap/{z}/{x}/{y}.png', { maxZoom: 16, layerKey: 'hillshade', attribution: '&copy; 国土地理院' }),
+      relief: new CachedTileLayer('https://cyberjapandata.gsi.go.jp/xyz/relief/{z}/{x}/{y}.png', { maxZoom: 15, layerKey: 'relief', attribution: '&copy; 国土地理院' }),
+      pale: new CachedTileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', { maxZoom: 18, layerKey: 'pale', attribution: '&copy; 国土地理院' }),
+      std: new CachedTileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', { maxZoom: 18, layerKey: 'std', attribution: '&copy; 国土地理院' })
+    };
+
+    const geologyLayer = new CachedTileLayer('https://gbank.gsj.jp/seamless/v2/api/1.2/tiles/{z}/{y}/{x}.png', {
+      maxZoom: 16,
+      opacity: 0.65,
+      layerKey: 'geology',
+      attribution: '&copy; 産総研'
+    });
+
+    const map = L.map('map', { zoomControl: false, layers: [baseLayers.photo, geologyLayer] }).setView([36.7, 138.5], 7);
+
+    function updateZoomDisplay() {
+      document.getElementById('zoomText').innerText = `Lv.${map.getZoom()}`;
+    }
+    map.on('zoomend', updateZoomDisplay);
+    updateZoomDisplay();
+
+    let currentBase = baseLayers.photo;
+    let currentBaseKey = 'photo';
+    document.getElementById('baseMapSelect').addEventListener('change', (e) => {
+      map.removeLayer(currentBase);
+      currentBaseKey = e.target.value;
+      currentBase = baseLayers[currentBaseKey];
+      map.addLayer(currentBase);
+      currentBase.bringToBack();
+    });
+
+    document.getElementById('opacitySlider').addEventListener('input', (e) => {
+      geologyLayer.setOpacity(e.target.value);
+      document.getElementById('opacityVal').innerText = Math.round(e.target.value * 100) + '%';
+    });
+
+    // 3. Pro版限定：全国転石ホットゾーン（GeoJSONハイライト）
+    const hotzonesData = [
+      {
+        id: 'kuji',
+        name: '久慈川・玉川水系（メノウ・玉髄転石帯）',
+        color: '#ff9800',
+        center: [36.635, 140.405],
+        zoom: 13,
+        type: 'polyline',
+        coords: [
+          [36.662, 140.380], [36.645, 140.395], [36.630, 140.410], [36.615, 140.430]
+        ],
+        info: '<b>🟠 久慈川・玉川 転石帯</b><br>💎 <b>対象:</b> 瑪瑙（赤・黄縞）、玉髄、碧玉、珪化木<br>⛏️ <b>特徴:</b> 上流の新第三紀流紋岩層から流出したメノウが中流の広い砂利原に集積。水深10〜20cmの浅瀬で光を透して探そう！'
+      },
+      {
+        id: 'abe',
+        name: '安倍川・梅ヶ島水系（砂金・含金石英脈）',
+        color: '#fbc02d',
+        center: [35.185, 138.320],
+        zoom: 13,
+        type: 'polyline',
+        coords: [
+          [35.210, 138.310], [35.195, 138.318], [35.175, 138.328], [35.150, 138.340]
+        ],
+        info: '<b>🟡 安倍川 金山水系</b><br>💎 <b>対象:</b> 砂金、含金石英脈（銀黒）、黄鉄鉱<br>⛏️ <b>特徴:</b> 梅ヶ島金山由来。蛇行部の内側砂州や、岩盤（カッチャ）の隙間に溜まった重砂をパンニング！'
+      },
+      {
+        id: 'itoigawa',
+        name: '親不知〜宮崎ヒスイ海岸（漂着ワンド）',
+        color: '#4caf50',
+        center: [36.980, 137.600],
+        zoom: 13,
+        type: 'polygon',
+        coords: [
+          [36.975, 137.560], [36.985, 137.630], [36.978, 137.640], [36.968, 137.570]
+        ],
+        info: '<b>🟢 糸魚川〜宮崎 ヒスイ海岸帯</b><br>💎 <b>対象:</b> ヒスイ（本翡翠）、ネフライト、ロディン岩<br>⛏️ <b>特徴:</b> 姫川・青海川から沿岸流で運ばれる漂着エリア。波打ち際でずっしり重く角ばった石を狙おう。（※川の上流保護地区は採取禁止）'
+      },
+      {
+        id: 'futagami',
+        name: '二上山・竹内峠沢筋（サファイア・柘榴石）',
+        color: '#ab47bc',
+        center: [34.520, 135.670],
+        zoom: 14,
+        type: 'polyline',
+        coords: [
+          [34.528, 135.660], [34.520, 135.672], [34.512, 135.680]
+        ],
+        info: '<b>🟣 二上山 サファイア沢筋</b><br>💎 <b>対象:</b> 青色サファイア（微小コランダム）、ガーネット<br>⛏️ <b>特徴:</b> サヌカイト質安山岩が風化した川砂。目の細かいふるいとパンニング皿で重砂を選別！'
+      },
+      {
+        id: 'sado',
+        name: '佐渡・西三川〜羽茂水系（赤玉石・砂金）',
+        color: '#e53935',
+        center: [37.880, 138.320],
+        zoom: 13,
+        type: 'polyline',
+        coords: [
+          [37.910, 138.300], [37.890, 138.315], [37.870, 138.330]
+        ],
+        info: '<b>🔴 佐渡・西三川 転石帯</b><br>💎 <b>対象:</b> 佐渡赤玉石（ジャスパー）、砂金<br>⛏️ <b>特徴:</b> 鮮やかな真紅の銘石転石と、歴史ある西三川砂金水系の堆積エリア。'
+      }
+    ];
+
+    const hotzonesLayer = L.layerGroup().addTo(map);
+
+    function renderHotzones() {
+      hotzonesLayer.clearLayers();
+      hotzonesData.forEach(z => {
+        let shape;
+        if (z.type === 'polyline') {
+          shape = L.polyline(z.coords, { color: z.color, weight: 8, opacity: 0.75 });
+        } else {
+          shape = L.polygon(z.coords, { color: z.color, fillColor: z.color, fillOpacity: 0.35, weight: 3 });
+        }
+        shape.bindPopup(`<div style="font-size:11.5px; line-height:1.4;">${z.info}</div>`);
+        shape.addTo(hotzonesLayer);
+      });
+    }
+    renderHotzones();
+
+    let hotzonesVisible = true;
+    function toggleHotzones() {
+      hotzonesVisible = !hotzonesVisible;
+      const btn = document.getElementById('hotzoneToggleBtn');
+      if (hotzonesVisible) {
+        map.addLayer(hotzonesLayer);
+        btn.innerText = '🔥 転石ゾーン: ON';
+        btn.classList.add('pro-toggle');
+      } else {
+        map.removeLayer(hotzonesLayer);
+        btn.innerText = '🔥 転石ゾーン: OFF';
+        btn.classList.remove('pro-toggle');
+      }
+    }
+
+    function focusZone(id) {
+      const z = hotzonesData.find(item => item.id === id);
+      if (z) {
+        map.setView(z.center, z.zoom);
+        document.getElementById('guideContent').innerHTML = z.info;
+      }
+    }
+
+    // 4. ボトムシート
+    function toggleBottomSheet() {
+      const sheet = document.getElementById('bottomSheet');
+      const arrow = document.getElementById('sheetArrow');
+      const isOpen = sheet.classList.toggle('open');
+      arrow.innerText = isOpen ? '▼' : '▲';
+    }
+
+    function switchGuideTab(tab) {
+      document.getElementById('tabHot').classList.remove('active');
+      document.getElementById('tabGeo').classList.remove('active');
+      document.getElementById('tabStone').classList.remove('active');
+      document.getElementById('viewHot').style.display = 'none';
+      document.getElementById('viewGeo').style.display = 'none';
+      document.getElementById('viewStone').style.display = 'none';
+
+      if (tab === 'hot') {
+        document.getElementById('tabHot').classList.add('active');
+        document.getElementById('viewHot').style.display = 'block';
+      } else if (tab === 'geo') {
+        document.getElementById('tabGeo').classList.add('active');
+        document.getElementById('viewGeo').style.display = 'block';
+      } else if (tab === 'stone') {
+        document.getElementById('tabStone').classList.add('active');
+        document.getElementById('viewStone').style.display = 'block';
+      }
+    }
+
+    const guideDB = {
+      granite: { title: '🌸 花崗岩・深成岩帯', stones: '水晶、長石、雲母、ガーネット', field: '白〜淡いピンクのツブツブ岩。水中でキラキラ光る石や水晶結晶を探そう！' },
+      rhyolite: { title: '🍊 流紋岩・凝灰岩', stones: 'メノウ（瑪瑙）、玉髄、碧玉、オパール', field: '石拾い大本命！気泡跡のある転石を割ると飴色のメノウが現れます。' },
+      serpentine: { title: '🌿 蛇紋岩・変成岩帯', stones: 'ヒスイ、ネフライト、滑石、磁鉄鉱', field: 'ずっしり重く油のような光沢の角ばった石を狙おう。' },
+      sediment: { title: '💧 堆積岩層（砂泥礫）', stones: '化石、珪化木、黄鉄鉱ノジュール', field: '丸っこい団塊（ノジュール）や木目が残る珪化木に注目！' },
+      chert: { title: '🍇 チャート・珪質岩', stones: '赤石（ジャスパー）、フリント', field: '硬度7で超硬い！鮮やかな赤や緑の艶やかな石。' },
+      basalt: { title: '🪨 玄武岩・安山岩', stones: 'ゼオライト（沸石）、方解石、ペリドット', field: '溶岩の穴ぼこに白い針状結晶や黄緑のペリドット粒が入っています。' }
+    };
+    function showGuide(k) {
+      const d = guideDB[k];
+      if (d) document.getElementById('guideContent').innerHTML = `<b>${d.title}</b><br>💎 <b>期待できる石:</b> ${d.stones}<br><span style="color:#555;">${d.field}</span>`;
+    }
+
+    const stoneDB = {
+      agate: { name: '💎 メノウ・玉髄', targetGeo: '🍊 流紋岩帯', tips: '濡らして光を透すと飴色に光る石。縞模様や気泡跡が目印！' },
+      quartz: { name: '✨ 水晶・石英', targetGeo: '🌸 花崗岩帯', tips: 'ガラスを傷つける六角柱状結晶。砂利の中や石英脈を探そう。' },
+      jade: { name: '🟢 ヒスイ・ネフライト', targetGeo: '🌿 蛇紋岩帯', tips: 'ずっしり重く、上品な油光沢と角ばった形状が特徴。' },
+      jasper: { name: '🔴 碧玉・赤石', targetGeo: '🍊 流紋岩 / 🍇 チャート', tips: '不透明で超硬い鮮やかな赤・緑の石。' },
+      wood: { name: '🪵 珪化木', targetGeo: '💧 堆積岩層', tips: '年輪や木肌が残り、叩くと金属音がする硬い化石。' },
+      gold: { name: '🪙 砂金・金鉱石', targetGeo: '🟡 熱水鉱床・金山水系', tips: '比重19.3の圧倒的重さ。蛇行の内側やポットホールの最深部を狙う。' },
+      sapphire: { name: '💎 サファイア・柘榴石', targetGeo: '🟣 火山岩・ペグマタイト風化帯', tips: '比重4の硬質結晶。砂利だまりをパンニングして青・赤の粒を抽出。' }
+    };
+    function showStoneGuide(k) {
+      const d = stoneDB[k];
+      if (d) document.getElementById('guideContent').innerHTML = `<b>${d.name}</b><br>🎯 <b>狙う地質:</b> ${d.targetGeo}<br><span style="color:#455a64;">${d.tips}</span>`;
+    }
+
+    // 5. コンパス
+    function getDirectionName(deg) {
+      const directions = ['北', '北北東', '北東', '東北東', '東', '東南東', '南東', '南南東', '南', '南南西', '南西', '西南西', '西', '西北西', '北西', '北北西'];
+      return directions[Math.round(deg / 22.5) % 16];
+    }
+    function handleOrientation(e) {
+      let heading = (e.webkitCompassHeading !== undefined) ? e.webkitCompassHeading : ((e.alpha !== null) ? (360 - e.alpha) % 360 : null);
+      if (heading !== null) {
+        const deg = Math.round(heading);
+        document.getElementById('compassNeedle').style.transform = `rotate(${deg}deg)`;
+        document.getElementById('headingText').innerText = `${getDirectionName(deg)} (${deg}°)`;
+      }
+    }
+    if (window.DeviceOrientationEvent) window.addEventListener('deviceorientation', handleOrientation, true);
+    function requestOrientationPermission() {
+      if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission().then(st => { if (st === 'granted') window.addEventListener('deviceorientation', handleOrientation, true); });
+      }
+    }
+
+    // 6. EXIF解析＆写真一括
+    let detectedExifLatLng = null;
+    function checkExifLocation(input) {
+      const file = input.files[0];
+      detectedExifLatLng = null;
+      document.getElementById('exifAlert').style.display = 'none';
+      if (!file) return;
+
+      EXIF.getData(file, function() {
+        const lat = EXIF.getTag(this, 'GPSLatitude');
+        const latRef = EXIF.getTag(this, 'GPSLatitudeRef') || 'N';
+        const lng = EXIF.getTag(this, 'GPSLongitude');
+        const lngRef = EXIF.getTag(this, 'GPSLongitudeRef') || 'E';
+
+        if (lat && lng) {
+          const latDec = (lat[0] + lat[1]/60 + lat[2]/3600) * (latRef === 'N' ? 1 : -1);
+          const lngDec = (lng[0] + lng[1]/60 + lng[2]/3600) * (lngRef === 'E' ? 1 : -1);
+          detectedExifLatLng = { lat: latDec, lng: lngDec };
+          document.getElementById('exifAlert').style.display = 'block';
+        }
+      });
+    }
+
+    function batchImportPhotos(e) {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      const logs = JSON.parse(localStorage.getItem('stone_logs_pro') || '[]');
+
+      Array.from(files).forEach(file => {
+        EXIF.getData(file, function() {
+          const lat = EXIF.getTag(this, 'GPSLatitude');
+          const latRef = EXIF.getTag(this, 'GPSLatitudeRef') || 'N';
+          const lng = EXIF.getTag(this, 'GPSLongitude');
+          const lngRef = EXIF.getTag(this, 'GPSLongitudeRef') || 'E';
+          const dateTag = EXIF.getTag(this, 'DateTimeOriginal') || '';
+
+          if (lat && lng) {
+            const latDec = (lat[0] + lat[1]/60 + lat[2]/3600) * (latRef === 'N' ? 1 : -1);
+            const lngDec = (lng[0] + lng[1]/60 + lng[2]/3600) * (lngRef === 'E' ? 1 : -1);
+            const dateStr = dateTag ? dateTag.split(' ')[0].replace(/:/g, '/') : new Date().toLocaleDateString('ja-JP');
+
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              const img = new Image();
+              img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const maxDim = 400;
+                let w = img.width, h = img.height;
+                if (w > h && w > maxDim) { h = (h * maxDim)/w; w = maxDim; }
+                else if (h > maxDim) { w = (w * maxDim)/h; h = maxDim; }
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+
+                logs.push({
+                  lat: latDec,
+                  lng: lngDec,
+                  name: file.name.replace(/\.[^/.]+$/, "") || '写真ログ',
+                  memo: '写真EXIFから自動配置',
+                  date: dateStr,
+                  photo: canvas.toDataURL('image/jpeg', 0.7)
+                });
+                localStorage.setItem('stone_logs_pro', JSON.stringify(logs));
+                loadLogs();
+              };
+              img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+      });
+      alert(`写真の解析を開始しました！GPS付きの写真が地図に自動配置されます。`);
+      closeModal('dataModal');
+    }
+
+    // 7. プライバシー保護
+    let isPrivacy = false;
+    function togglePrivacy() {
+      isPrivacy = !isPrivacy;
+      const btn = document.getElementById('privacyBtn');
+      btn.innerText = isPrivacy ? '🔒 共有保護: ON' : '🔒 共有保護: OFF';
+      btn.classList.toggle('active', isPrivacy);
+      loadLogs();
+    }
+    function formatCoord(val) {
+      return isPrivacy ? (Math.floor(val) + '.' + String(Math.abs(val) % 1).slice(2, 4) + '***') : val.toFixed(4);
+    }
+
+    // 8. スリープ防止
+    let wakeLock = null;
+    async function toggleWakeLock() {
+      if ('wakeLock' in navigator) {
+        if (!wakeLock) {
+          try {
+            wakeLock = await navigator.wakeLock.request('screen');
+            document.getElementById('wakeLockBtn').innerText = '💡 スリープ防止: ON';
+            document.getElementById('wakeLockBtn').classList.add('active');
+            wakeLock.addEventListener('release', () => {
+              wakeLock = null;
+              document.getElementById('wakeLockBtn').innerText = '💡 スリープ防止: OFF';
+              document.getElementById('wakeLockBtn').classList.remove('active');
+            });
+          } catch (e) { alert('起動失敗: ' + e.message); }
+        } else { wakeLock.release(); wakeLock = null; }
+      } else { alert('非対応端末です'); }
+    }
+
+    // 9. 日没・潮汐
+    function updateSunAndTide(lat, lng) {
+      const now = new Date();
+      const start = new Date(now.getFullYear(), 0, 0);
+      const day = Math.floor((now - start) / 86400000);
+      const gamma = 2 * Math.PI / 365 * (day - 1);
+      const eqtime = 229.18 * (0.000075 + 0.001868 * Math.cos(gamma) - 0.032077 * Math.sin(gamma) - 0.014615 * Math.cos(2 * gamma) - 0.040849 * Math.sin(2 * gamma));
+      const decl = 0.006918 - 0.399912 * Math.cos(gamma) + 0.070257 * Math.sin(gamma);
+      const cosH = (Math.cos(90.833 * Math.PI / 180) - Math.sin(lat * Math.PI / 180) * Math.sin(decl)) / (Math.cos(lat * Math.PI / 180) * Math.cos(decl));
+
+      if (cosH >= -1 && cosH <= 1) {
+        const H = Math.acos(cosH) * 180 / Math.PI;
+        const sunsetMin = 720 - 4 * lng - eqtime + 540 + H * 4;
+        const sH = Math.floor(sunsetMin / 60) % 24;
+        const sM = Math.floor(sunsetMin % 60);
+
+        const curMin = now.getHours() * 60 + now.getMinutes();
+        const remain = Math.floor(sunsetMin - curMin);
+        let remainStr = remain > 0 ? ` (残${Math.floor(remain/60)}h${remain%60}m)` : ' (日没済)';
+        document.getElementById('sunTimeText').innerText = `🌇 ${String(sH).padStart(2,'0')}:${String(sM).padStart(2,'0')}${remainStr}`;
+      }
+
+      const baseDate = new Date(2000, 0, 6, 18, 14);
+      const moonAge = (((now - baseDate) / 86400000) % 29.530588853).toFixed(1);
+      let tideName = '中潮';
+      if ((moonAge >= 29 || moonAge <= 2) || (moonAge >= 14 && moonAge <= 17)) tideName = '大潮';
+      else if ((moonAge >= 7 && moonAge <= 9) || (moonAge >= 22 && moonAge <= 24)) tideName = '小潮';
+      document.getElementById('tideText').innerText = `🌊 ${tideName} (${moonAge})`;
+    }
+    updateSunAndTide(36.7, 138.5);
+
+    // 10. 距離計測
+    let isMeasuring = false;
+    let measurePoints = [];
+    let measureLine = L.polyline([], { color: '#0288d1', weight: 4, dashArray: '4, 4' }).addTo(map);
+
+    function toggleMeasure() {
+      isMeasuring = !isMeasuring;
+      const btn = document.getElementById('measureBtn');
+      btn.innerText = isMeasuring ? '📏 計測中 (タップ)' : '📏 距離計測: OFF';
+      btn.classList.toggle('active', isMeasuring);
+      measurePoints = [];
+      measureLine.setLatLngs([]);
+      closeModal('toolsModal');
+    }
+
+    // 11. GPS軌跡
+    let isTracking = false;
+    let watchId = null;
+    let trackLatLngs = [];
+    const trackLine = L.polyline([], { color: '#e53935', weight: 4, opacity: 0.85, dashArray: '6, 6' }).addTo(map);
+
+    document.getElementById('trackBtn').addEventListener('click', () => {
+      if (!isTracking) {
+        if (!navigator.geolocation) return alert('GPS非対応');
+        isTracking = true;
+        document.getElementById('trackBtn').innerText = '🐾 軌跡記録: ON';
+        document.getElementById('trackBtn').classList.add('active');
+        watchId = navigator.geolocation.watchPosition(
+          (pos) => {
+            const p = [pos.coords.latitude, pos.coords.longitude];
+            trackLatLngs.push(p);
+            trackLine.setLatLngs(trackLatLngs);
+            updateSunAndTide(pos.coords.latitude, pos.coords.longitude);
+          },
+          (err) => console.warn(err),
+          { enableHighAccuracy: true }
+        );
+      } else {
+        isTracking = false;
+        navigator.geolocation.clearWatch(watchId);
+        document.getElementById('trackBtn').innerText = '🐾 軌跡記録: OFF';
+        document.getElementById('trackBtn').classList.remove('active');
+      }
+    });
+
+    // 12. 採集ログ
+    const logLayer = L.layerGroup().addTo(map);
+    let selectedLatLng = null;
+    let currentCardIndex = null;
+
+    function loadLogs() {
+      logLayer.clearLayers();
+      const logs = JSON.parse(localStorage.getItem('stone_logs_pro') || '[]');
+      logs.forEach((item, index) => {
+        L.marker([item.lat, item.lng], {
+          icon: L.divIcon({ html: '<div style="font-size:20px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.4));">💎</div>', iconSize: [24, 24], iconAnchor: [12, 12] })
+        }).addTo(logLayer).bindPopup(`
+          <div style="min-width:190px; font-size:11.5px;">
+            <h4 style="margin:0 0 4px; color:#2e7d32;">💎 ${item.name}</h4>
+            <div style="font-size:9.5px; color:#888;">📅 ${item.date} | 📍 ${formatCoord(item.lat)}, ${formatCoord(item.lng)}</div>
+            ${item.photo ? `<img src="${item.photo}" style="width:100%; border-radius:6px; margin:4px 0; max-height:130px; object-fit:cover;">` : ''}
+            <div>${item.memo}</div>
+            <div class="btn-row">
+              <button style="background:#e65100; color:white; border:none; padding:4px 6px; border-radius:4px; font-size:9.5px; cursor:pointer;" onclick="openCardThemeModal(${index})">🎴 トレカ</button>
+              <button style="background:#d32f2f; color:white; border:none; padding:4px 6px; border-radius:4px; font-size:9.5px; cursor:pointer;" onclick="deleteLog(${index})">削除</button>
+            </div>
+          </div>
+        `);
+      });
+    }
+
+    function openCardThemeModal(idx) {
+      currentCardIndex = idx;
+      openModal('cardThemeModal');
+    }
+
+    function renderAndDownloadCard() {
+      const theme = document.getElementById('cardThemeSelect').value;
+      const logs = JSON.parse(localStorage.getItem('stone_logs_pro') || '[]');
+      const item = logs[currentCardIndex];
+      if (!item) return;
+
+      const canvas = document.getElementById('cardCanvas');
+      canvas.width = 600; canvas.height = 840;
+      const ctx = canvas.getContext('2d');
+
+      if (theme === 'gold') {
+        const bgGrad = ctx.createLinearGradient(0, 0, 600, 840);
+        bgGrad.addColorStop(0, '#1a237e'); bgGrad.addColorStop(0.5, '#311b92'); bgGrad.addColorStop(1, '#0d47a1');
+        ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, 600, 840);
+        ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 12; ctx.strokeRect(15, 15, 570, 810);
+        ctx.strokeStyle = '#fff8e1'; ctx.lineWidth = 2; ctx.strokeRect(25, 25, 550, 790);
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 32px sans-serif'; ctx.fillText(`💎 ${item.name}`, 45, 75);
+        ctx.fillStyle = '#ffd54f'; ctx.font = 'bold 18px sans-serif'; ctx.fillText('★ PRO SSR ULTRA MINERAL ★', 45, 105);
+      } else if (theme === 'vintage') {
+        ctx.fillStyle = '#f4ecd8'; ctx.fillRect(0, 0, 600, 840);
+        ctx.strokeStyle = '#5d4037'; ctx.lineWidth = 6; ctx.strokeRect(20, 20, 560, 800);
+        ctx.fillStyle = '#3e2723'; ctx.font = 'bold 30px serif'; ctx.fillText(`標本: ${item.name}`, 45, 75);
+        ctx.fillStyle = '#795548'; ctx.font = 'italic 18px serif'; ctx.fillText('NATURAL SPECIMEN ARCHIVE', 45, 105);
+      } else {
+        ctx.fillStyle = '#0a0e17'; ctx.fillRect(0, 0, 600, 840);
+        ctx.strokeStyle = '#00e5ff'; ctx.lineWidth = 6; ctx.strokeRect(20, 20, 560, 800);
+        ctx.fillStyle = '#00e5ff'; ctx.font = 'bold 30px monospace'; ctx.fillText(`ID: ${item.name}`, 45, 75);
+        ctx.fillStyle = '#76ff03'; ctx.font = '16px monospace'; ctx.fillText('>> PRO GEOLOGICAL DATA', 45, 105);
+      }
+
+      const drawDetails = (imgObj) => {
+        if (imgObj) ctx.drawImage(imgObj, 45, 125, 510, 390);
+        else {
+          ctx.fillStyle = '#333'; ctx.fillRect(45, 125, 510, 390);
+          ctx.fillStyle = '#888'; ctx.font = '36px sans-serif'; ctx.fillText('NO IMAGE', 210, 330);
+        }
+
+        ctx.fillStyle = (theme === 'vintage') ? '#fffdf7' : ((theme === 'cyber') ? 'rgba(10,25,47,0.9)' : 'rgba(255,255,255,0.95)');
+        ctx.fillRect(45, 535, 510, 250);
+        ctx.strokeStyle = (theme === 'vintage') ? '#8d6e63' : ((theme === 'cyber') ? '#00e5ff' : '#ffd700');
+        ctx.lineWidth = 2; ctx.strokeRect(45, 535, 510, 250);
+
+        ctx.fillStyle = (theme === 'cyber') ? '#00e5ff' : '#263238';
+        ctx.font = 'bold 20px sans-serif';
+        ctx.fillText(`📅 採取日: ${item.date}`, 65, 575);
+        ctx.fillText(`📍 座標: ${formatCoord(item.lat)}, ${formatCoord(item.lng)}`, 65, 615);
+        ctx.font = '18px sans-serif';
+        ctx.fillText(`📝 メモ: ${item.memo || '特記事項なし'}`, 65, 660);
+
+        ctx.fillStyle = '#78909c'; ctx.font = '13px sans-serif';
+        ctx.fillText('石拾い地質探査システム【Pro Edition】', 65, 760);
+
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = `ProCard_${item.name}_${item.date}.png`;
+        a.click();
+        closeModal('cardThemeModal');
+      };
+
+      if (item.photo) {
+        const img = new Image(); img.crossOrigin = 'Anonymous';
+        img.onload = () => drawDetails(img);
+        img.src = item.photo;
+      } else { drawDetails(null); }
+    }
+
+    function openGalleryModal() {
+      const logs = JSON.parse(localStorage.getItem('stone_logs_pro') || '[]');
+      const container = document.getElementById('galleryContainer');
+      container.innerHTML = '';
+      if (logs.length === 0) {
+        container.innerHTML = '<div style="grid-column:span 2; color:#888; text-align:center; padding:15px;">まだログがありません。</div>';
+      } else {
+        logs.forEach((item) => {
+          const card = document.createElement('div');
+          card.className = 'gallery-card';
+          card.innerHTML = `
+            ${item.photo ? `<img src="${item.photo}">` : '<div style="height:80px; background:#ddd; display:flex; align-items:center; justify-content:center; color:#888; font-size:20px;">💎</div>'}
+            <div class="gallery-card-info">
+              <b>${item.name}</b><br><span style="color:#888; font-size:9px;">${item.date}</span>
+            </div>
+          `;
+          card.onclick = () => { closeModal('galleryModal'); map.setView([item.lat, item.lng], 16); };
+          container.appendChild(card);
+        });
+      }
+      openModal('galleryModal');
+    }
+
+    // 地図クリック
+    let tempMarker = null;
+    map.on('click', (e) => {
+      const { lat, lng } = e.latlng;
+      if (isMeasuring) {
+        measurePoints.push([lat, lng]);
+        measureLine.setLatLngs(measurePoints);
+        return;
+      }
+
+      selectedLatLng = { lat, lng };
+      if (tempMarker) map.removeLayer(tempMarker);
+      const naviUrl = `https://gbank.gsj.jp/seamless/v2/viewer/?lat=${lat.toFixed(5)}&lng=${lng.toFixed(5)}&z=14`;
+
+      tempMarker = L.marker([lat, lng]).addTo(map);
+      tempMarker.bindPopup(`
+        <div style="font-size:11.5px;">
+          <h4 style="margin:0 0 3px;">📍 選択地点</h4>
+          <div>${formatCoord(lat)}, ${formatCoord(lng)}</div>
+          <div class="btn-row">
+            <button class="btn-act" style="background:#2e7d32;" onclick="openModal('logModal')">💎 採集ログ</button>
+            <a href="${naviUrl}" target="_blank" class="btn-act" style="background:#1565c0; text-decoration:none;">公式詳細 ↗</a>
+          </div>
+        </div>
+      `).openPopup();
+    });
+
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    function saveCurrentLog() {
+      const name = document.getElementById('logStoneName').value || '採取した石';
+      const memo = document.getElementById('logMemo').value || '';
+      const file = document.getElementById('logPhoto').files[0];
+      const now = new Date().toLocaleDateString('ja-JP');
+      const targetCoords = detectedExifLatLng || selectedLatLng || { lat: 36.7, lng: 138.5 };
+
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const maxDim = 400;
+            let w = img.width, h = img.height;
+            if (w > h && w > maxDim) { h = (h * maxDim)/w; w = maxDim; }
+            else if (h > maxDim) { w = (w * maxDim)/h; h = maxDim; }
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            saveToStorage(targetCoords, name, memo, now, canvas.toDataURL('image/jpeg', 0.7));
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      } else { saveToStorage(targetCoords, name, memo, now, null); }
+    }
+
+    function saveToStorage(coords, name, memo, date, photo) {
+      const logs = JSON.parse(localStorage.getItem('stone_logs_pro') || '[]');
+      logs.push({ lat: coords.lat, lng: coords.lng, name, memo, date, photo });
+      localStorage.setItem('stone_logs_pro', JSON.stringify(logs));
+      closeModal('logModal');
+      if (tempMarker) map.removeLayer(tempMarker);
+      loadLogs();
+    }
+
+    window.deleteLog = function(i) {
+      if (!confirm('このログを削除しますか？')) return;
+      const logs = JSON.parse(localStorage.getItem('stone_logs_pro') || '[]');
+      logs.splice(i, 1);
+      localStorage.setItem('stone_logs_pro', JSON.stringify(logs));
+      map.closePopup();
+      loadLogs();
+    };
+
+    loadLogs();
+
+    // 13. 鑑定
+    function runDiagnosis() {
+      const trans = document.getElementById('diagTrans').value;
+      const luster = document.getElementById('diagLuster').value;
+      const hard = document.getElementById('diagHard').value;
+      const color = document.getElementById('diagColor').value;
+      let cand = [];
+
+      if (hard === 'hard') {
+        if (trans === 'high' && (color === 'stripe' || luster === 'glass' || luster === 'waxy')) cand.push('<b>💎 メノウ（瑪瑙）/ 玉髄</b>: 縞模様や飴色の光沢。');
+        if (trans === 'high' && color === 'white' && luster === 'glass') cand.push('<b>✨ 石英（水晶）</b>: ガラスを傷つける硬度。');
+        if (trans === 'low' && (color === 'orange' || color === 'green')) cand.push('<b>🔴 碧玉（ジャスパー）/ チャート</b>: 不透明で硬い赤・緑の石。');
+        if (color === 'green') cand.push('<b>🟢 ヒスイ / ネフライト</b>: 重みがあり油を塗ったような上品な光沢。');
+        if (color === 'black') cand.push('<b>🖤 黒曜石</b>: 鋭い割れ口を持つ天然ガラス。');
+      } else {
+        if (luster === 'metallic') cand.push('<b>🪙 黄鉄鉱 / 磁鉄鉱 / 砂金</b>: 金属光沢。');
+        else if (color === 'green') cand.push('<b>🌿 蛇紋岩 / 滑石</b>: 削れやすく石鹸のような感触。');
+        else cand.push('<b>⚪ 方解石 / 泥岩・砂岩</b>: 比較的柔らかい石。');
+      }
+      const resDiv = document.getElementById('diagResult');
+      resDiv.style.display = 'block';
+      resDiv.innerHTML = '<b style="color:#6a1b9a;">🔍 候補:</b><br>' + cand.join('<br><br>');
+    }
+
+    // 14. バックアップ
+    function exportLogs() {
+      const logs = localStorage.getItem('stone_logs_pro') || '[]';
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([logs], { type: 'application/json' }));
+      a.download = `stone_pro_backup_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+    }
+
+    function importLogs(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const imp = JSON.parse(ev.target.result);
+          if (Array.isArray(imp)) {
+            const cur = JSON.parse(localStorage.getItem('stone_logs_pro') || '[]');
+            localStorage.setItem('stone_logs_pro', JSON.stringify([...cur, ...imp]));
+            alert(`復元完了！ ${imp.length} 件を追加しました。`);
+            loadLogs();
+            closeModal('dataModal');
+          }
+        } catch (err) { alert('ファイルが無効です'); }
+      };
+      reader.readAsText(file);
+    }
+
+    // 15. オフライン保存
+    async function updateCacheCount() {
+      const keys = await tileDB.keys();
+      document.getElementById('cacheStatus').innerText = `キャッシュ: ${keys.length}枚`;
+    }
+    updateCacheCount();
+
+    function latLngToTile(lat, lng, zoom) {
+      const x = Math.floor((lng + 180) / 360 * Math.pow(2, zoom));
+      const y = Math.floor((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom));
+      return { x, y };
+    }
+
+    document.getElementById('downloadTilesBtn').addEventListener('click', async () => {
+      const bounds = map.getBounds();
+      const currentZoom = map.getZoom();
+      const targetZooms = [currentZoom, Math.min(currentZoom + 1, 16)];
+      let tasks = [];
+
+      targetZooms.forEach(z => {
+        const nw = latLngToTile(bounds.getNorth(), bounds.getWest(), z);
+        const se = latLngToTile(bounds.getSouth(), bounds.getEast(), z);
+        for (let x = Math.min(nw.x, se.x); x <= Math.max(nw.x, se.x); x++) {
+          for (let y = Math.min(nw.y, se.y); y <= Math.max(nw.y, se.y); y++) {
+            tasks.push({ key: `${currentBaseKey}_${z}_${x}_${y}`, url: currentBase.getTileUrl({ x, y, z }) });
+            tasks.push({ key: `geology_${z}_${x}_${y}`, url: geologyLayer.getTileUrl({ x, y, z }) });
+          }
+        }
+      });
+
+      const estMB = (tasks.length * 0.02).toFixed(1);
+      if (!confirm(`【保存確認】\n推定タイル数: ${tasks.length} 枚\nデータ容量: 約 ${estMB} MB\n\n端末に保存しますか？`)) return;
+
+      const btn = document.getElementById('downloadTilesBtn');
+      btn.disabled = true;
+      let count = 0;
+      for (const t of tasks) {
+        try {
+          const res = await fetch(t.url);
+          if (res.ok) await tileDB.setItem(t.key, await res.blob());
+        } catch (e) {}
+        count++;
+        btn.innerText = `保存中... ${count}/${tasks.length}`;
+      }
+      btn.disabled = false;
+      btn.innerText = '📥 表示範囲を保存';
+      alert(`保存完了！ ${count} 枚の地図を端末にキャッシュしました。`);
+      updateCacheCount();
+    });
+
+    // 16. GPS
+    document.getElementById('gpsBtn').addEventListener('click', () => {
+      if (!navigator.geolocation) return alert('GPS非対応');
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          map.setView([latitude, longitude], 15);
+          L.circleMarker([latitude, longitude], { radius: 8, color: '#ff5722', fillOpacity: 0.8 }).addTo(map).bindPopup('現在地').openPopup();
+          updateSunAndTide(latitude, longitude);
+        },
+        (err) => alert('現在地取得失敗: ' + err.message)
+      );
+    });
+  </script>
+</body>
+</html>
