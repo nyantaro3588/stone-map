@@ -44,7 +44,7 @@
     .stone-tag-box { margin-top: 8px; padding: 8px; background: #fff8e1; border-radius: 8px; border: 1px solid #ffe082; }
     .stone-title { font-weight: bold; color: #d84315; margin-bottom: 4px; font-size: 13px; }
     .stone-list { color: #37474f; font-size: 12px; margin: 0; padding-left: 18px; }
-    .status-text { font-size: 10px; color: #888; margin-top: 6px; }
+    .debug-badge { font-size: 10px; color: #9e9e9e; margin-top: 6px; text-align: right; }
   </style>
 </head>
 <body>
@@ -62,7 +62,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // 1. 地図の初期化
+    // 1. 地図の初期化（新潟エリア）
     const map = L.map('map', { zoomControl: false }).setView([37.4, 139.0], 9);
     L.control.zoom({ position: 'topleft' }).addTo(map);
 
@@ -137,37 +137,59 @@
       return null;
     }
 
-    // 3. 安定CORSプロキシ自動フェイルオーバー
+    // 3. 4重フェイルオーバー通信エンジン
     async function fetchGeology(lat, lng) {
       const rawApi = `https://gbank.gsj.jp/seamless/v2/api/1.2/point?lat=${lat.toFixed(5)}&lng=${lng.toFixed(5)}`;
       
-      const proxyUrls = [
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(rawApi)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rawApi)}`,
-        `https://thingproxy.freeboard.io/fetch/${rawApi}`
-      ];
-
-      for (const pUrl of proxyUrls) {
-        try {
-          const res = await fetch(pUrl, { cache: 'no-store' });
-          if (res.ok) {
-            const data = await res.json();
-            if (data) return data;
+      // ルート1: AllOrigins (JSON Wrapper) - 一番確実
+      try {
+        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(rawApi)}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json && json.contents) {
+            const parsed = JSON.parse(json.contents);
+            if (parsed) return { data: parsed, server: 'AllOrigins' };
           }
-        } catch (err) {
-          console.warn('Proxy retry:', pUrl, err);
         }
-      }
-      throw new Error('地質サーバーへの接続経路が混雑しています');
+      } catch (e) { console.warn('Route 1 failed', e); }
+
+      // ルート2: CodeTabs Proxy
+      try {
+        const res = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rawApi)}`);
+        if (res.ok) {
+          const parsed = await res.json();
+          if (parsed) return { data: parsed, server: 'CodeTabs' };
+        }
+      } catch (e) { console.warn('Route 2 failed', e); }
+
+      // ルート3: Afeld Proxy
+      try {
+        const res = await fetch(`https://jsonp.afeld.me/?url=${encodeURIComponent(rawApi)}`);
+        if (res.ok) {
+          const parsed = await res.json();
+          if (parsed) return { data: parsed, server: 'Afeld' };
+        }
+      } catch (e) { console.warn('Route 3 failed', e); }
+
+      // ルート4: Direct Fetch
+      try {
+        const res = await fetch(rawApi);
+        if (res.ok) {
+          const parsed = await res.json();
+          if (parsed) return { data: parsed, server: 'Direct' };
+        }
+      } catch (e) { console.warn('Route 4 failed', e); }
+
+      throw new Error('地質サーバーにアクセスできませんでした');
     }
 
-    // 4. クリックイベント
+    // 4. 地図クリックイベント
     map.on('click', async function(e) {
       const { lat, lng } = e.latlng;
       const popup = L.popup().setLatLng(e.latlng).setContent('🔍 地質データを照会中...').openOn(map);
 
       try {
-        const rawData = await fetchGeology(lat, lng);
+        const { data: rawData, server } = await fetchGeology(lat, lng);
         const data = Array.isArray(rawData) ? rawData[0] : rawData;
 
         if (data && (data.title || data.litho || data.formation || data.group || data.symbol || data.age)) {
@@ -204,6 +226,7 @@
               <div><b>年代/層:</b> ${age} ${group && group !== title ? `(${group})` : ''}</div>
               <div><b>岩相:</b> ${litho}</div>
               ${stoneHtml}
+              <div class="debug-badge">通信経由: ${server}</div>
             </div>
           `);
         } else {
