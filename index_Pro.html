@@ -310,12 +310,12 @@
       </div>
 
       <div id="viewHot">
-        <div style="font-size:10px; color:#555; margin-bottom:4px;">地図上に色塗りされた転石帯をタップすると詳細が表示されます。</div>
+        <div style="font-size:10px; color:#555; margin-bottom:4px;">ボタンを押すとその川の流路全体に自動ジャンプします。</div>
         <div class="color-chips">
-          <div class="chip" style="background:#fff9c4; border-color:#fbc02d;" onclick="focusZone('kuji')">🟠 久慈川（メノウ/玉川）</div>
-          <div class="chip" style="background:#fffde7; border-color:#fbc02d;" onclick="focusZone('abe')">🟡 安倍川（砂金/重砂）</div>
+          <div class="chip" style="background:#fff9c4; border-color:#fbc02d;" onclick="focusZone('kuji')">🟠 久慈川・玉川（メノウ）</div>
+          <div class="chip" style="background:#fffde7; border-color:#fbc02d;" onclick="focusZone('abe')">🟡 安倍川（砂金・重砂）</div>
           <div class="chip" style="background:#e8f5e9; border-color:#81c784;" onclick="focusZone('itoigawa')">🟢 糸魚川海岸（ヒスイ漂着）</div>
-          <div class="chip" style="background:#ede7f6; border-color:#b39ddb;" onclick="focusZone('futagami')">🟣 二上山（サファイア/柘榴石）</div>
+          <div class="chip" style="background:#ede7f6; border-color:#b39ddb;" onclick="focusZone('futagami')">🟣 二上山（サファイア）</div>
           <div class="chip" style="background:#e0f7fa; border-color:#80deea;" onclick="focusZone('sado')">🔴 佐渡・羽茂（赤玉石/砂金）</div>
         </div>
       </div>
@@ -604,17 +604,18 @@
       document.getElementById('opacityVal').innerText = Math.round(e.target.value * 100) + '%';
     });
 
-    // 3. Pro版限定：全国転石ホットゾーン（GeoJSONハイライト）
+    // 3. Pro版限定：精密河川トレース・転石ホットゾーン
     const hotzonesData = [
       {
         id: 'kuji',
         name: '久慈川・玉川水系（メノウ・玉髄転石帯）',
         color: '#ff9800',
-        center: [36.635, 140.405],
-        zoom: 13,
         type: 'polyline',
         coords: [
-          [36.662, 140.380], [36.645, 140.395], [36.630, 140.410], [36.615, 140.430]
+          [36.6853, 140.3542], [36.6781, 140.3635], [36.6720, 140.3690],
+          [36.6635, 140.3752], [36.6540, 140.3845], [36.6455, 140.3951],
+          [36.6380, 140.4042], [36.6291, 140.4135], [36.6210, 140.4221],
+          [36.6135, 140.4320], [36.6021, 140.4485], [36.5912, 140.4610]
         ],
         info: '<b>🟠 久慈川・玉川 転石帯</b><br>💎 <b>対象:</b> 瑪瑙（赤・黄縞）、玉髄、碧玉、珪化木<br>⛏️ <b>特徴:</b> 上流の新第三紀流紋岩層から流出したメノウが中流の広い砂利原に集積。水深10〜20cmの浅瀬で光を透して探そう！'
       },
@@ -622,11 +623,12 @@
         id: 'abe',
         name: '安倍川・梅ヶ島水系（砂金・含金石英脈）',
         color: '#fbc02d',
-        center: [35.185, 138.320],
-        zoom: 13,
         type: 'polyline',
         coords: [
-          [35.210, 138.310], [35.195, 138.318], [35.175, 138.328], [35.150, 138.340]
+          [35.2952, 138.3341], [35.2785, 138.3355], [35.2590, 138.3382],
+          [35.2381, 138.3345], [35.2155, 138.3280], [35.1950, 138.3210],
+          [35.1762, 138.3295], [35.1580, 138.3412], [35.1385, 138.3510],
+          [35.1150, 138.3615], [35.0850, 138.3721]
         ],
         info: '<b>🟡 安倍川 金山水系</b><br>💎 <b>対象:</b> 砂金、含金石英脈（銀黒）、黄鉄鉱<br>⛏️ <b>特徴:</b> 梅ヶ島金山由来。蛇行部の内側砂州や、岩盤（カッチャ）の隙間に溜まった重砂をパンニング！'
       },
@@ -634,23 +636,22 @@
         id: 'itoigawa',
         name: '親不知〜宮崎ヒスイ海岸（漂着ワンド）',
         color: '#4caf50',
-        center: [36.980, 137.600],
-        zoom: 13,
-        type: 'polygon',
+        type: 'polyline',
         coords: [
-          [36.975, 137.560], [36.985, 137.630], [36.978, 137.640], [36.968, 137.570]
+          [37.0425, 137.8610], [37.0380, 137.8350], [37.0250, 137.7850],
+          [37.0085, 137.7320], [36.9950, 137.6750], [36.9830, 137.6250],
+          [36.9760, 137.5850], [36.9730, 137.5450]
         ],
         info: '<b>🟢 糸魚川〜宮崎 ヒスイ海岸帯</b><br>💎 <b>対象:</b> ヒスイ（本翡翠）、ネフライト、ロディン岩<br>⛏️ <b>特徴:</b> 姫川・青海川から沿岸流で運ばれる漂着エリア。波打ち際でずっしり重く角ばった石を狙おう。（※川の上流保護地区は採取禁止）'
       },
       {
         id: 'futagami',
-        name: '二上山・竹内峠沢筋（サファイア・柘榴石）',
+        name: '二上山・初田川〜原坂川沢筋（サファイア・柘榴石）',
         color: '#ab47bc',
-        center: [34.520, 135.670],
-        zoom: 14,
         type: 'polyline',
         coords: [
-          [34.528, 135.660], [34.520, 135.672], [34.512, 135.680]
+          [34.5265, 135.6620], [34.5240, 135.6665], [34.5215, 135.6710],
+          [34.5185, 135.6762], [34.5150, 135.6815], [34.5110, 135.6880]
         ],
         info: '<b>🟣 二上山 サファイア沢筋</b><br>💎 <b>対象:</b> 青色サファイア（微小コランダム）、ガーネット<br>⛏️ <b>特徴:</b> サヌカイト質安山岩が風化した川砂。目の細かいふるいとパンニング皿で重砂を選別！'
       },
@@ -658,29 +659,44 @@
         id: 'sado',
         name: '佐渡・西三川〜羽茂水系（赤玉石・砂金）',
         color: '#e53935',
-        center: [37.880, 138.320],
-        zoom: 13,
         type: 'polyline',
         coords: [
-          [37.910, 138.300], [37.890, 138.315], [37.870, 138.330]
+          [37.9310, 138.2910], [37.9150, 138.3025], [37.8985, 138.3150],
+          [37.8820, 138.3280], [37.8650, 138.3410], [37.8420, 138.3580]
         ],
         info: '<b>🔴 佐渡・西三川 転石帯</b><br>💎 <b>対象:</b> 佐渡赤玉石（ジャスパー）、砂金<br>⛏️ <b>特徴:</b> 鮮やかな真紅の銘石転石と、歴史ある西三川砂金水系の堆積エリア。'
       }
     ];
 
     const hotzonesLayer = L.layerGroup().addTo(map);
+    const hotzoneShapes = {};
 
     function renderHotzones() {
       hotzonesLayer.clearLayers();
       hotzonesData.forEach(z => {
-        let shape;
-        if (z.type === 'polyline') {
-          shape = L.polyline(z.coords, { color: z.color, weight: 8, opacity: 0.75 });
-        } else {
-          shape = L.polygon(z.coords, { color: z.color, fillColor: z.color, fillOpacity: 0.35, weight: 3 });
-        }
-        shape.bindPopup(`<div style="font-size:11.5px; line-height:1.4;">${z.info}</div>`);
-        shape.addTo(hotzonesLayer);
+        // 外側の半透明グロー帯（川幅をカバー）
+        const glowLine = L.polyline(z.coords, {
+          color: z.color,
+          weight: 16,
+          opacity: 0.35,
+          lineCap: 'round',
+          lineJoin: 'round'
+        }).addTo(hotzonesLayer);
+
+        // 中心流路ライン
+        const centerLine = L.polyline(z.coords, {
+          color: z.color,
+          weight: 4,
+          opacity: 0.9,
+          lineCap: 'round',
+          lineJoin: 'round'
+        }).addTo(hotzonesLayer);
+
+        const popupContent = `<div style="font-size:11.5px; line-height:1.45;">${z.info}</div>`;
+        glowLine.bindPopup(popupContent);
+        centerLine.bindPopup(popupContent);
+
+        hotzoneShapes[z.id] = centerLine;
       });
     }
     renderHotzones();
@@ -702,8 +718,10 @@
 
     function focusZone(id) {
       const z = hotzonesData.find(item => item.id === id);
-      if (z) {
-        map.setView(z.center, z.zoom);
+      const shape = hotzoneShapes[id];
+      if (z && shape) {
+        map.fitBounds(shape.getBounds(), { padding: [40, 40], maxZoom: 15 });
+        shape.openPopup();
         document.getElementById('guideContent').innerHTML = z.info;
       }
     }
