@@ -20,36 +20,62 @@
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; background: #000; }
     #map { width: 100%; height: 100%; }
 
-    /* 左上コンパクト情報（インカメラを避ける位置へオフセット） */
+    /* 左上コンパクト情報 */
     .info-widget {
       position: absolute;
       top: max(22px, env(safe-area-inset-top, 22px));
-      left: 16px;
+      left: 14px;
       z-index: 1000;
-      background: rgba(255, 255, 255, 0.94);
-      backdrop-filter: blur(6px);
-      padding: 5px 9px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      padding: 5px 10px;
       border-radius: 20px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      font-size: 10.5px;
+      font-size: 10px;
       font-weight: bold;
       color: #333;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
     }
-    .compass-dial {
-      width: 20px;
-      height: 20px;
+
+    /* 本格方位磁針デザイン */
+    .compass-container {
+      width: 22px;
+      height: 22px;
+      position: relative;
       border-radius: 50%;
-      border: 2px solid #ff5722;
+      border: 1.5px solid #455a64;
+      background: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 10px;
+      cursor: pointer;
+    }
+    .compass-needle {
+      width: 4px;
+      height: 18px;
+      position: absolute;
+      transition: transform 0.15s ease-out;
+      transform-origin: center center;
+    }
+    /* 赤い北針と白い南針 */
+    .needle-n {
+      width: 0; height: 0;
+      border-left: 2px solid transparent;
+      border-right: 2px solid transparent;
+      border-bottom: 9px solid #e53935;
+      margin: 0 auto;
+    }
+    .needle-s {
+      width: 0; height: 0;
+      border-left: 2px solid transparent;
+      border-right: 2px solid transparent;
+      border-top: 9px solid #90a4ae;
+      margin: 0 auto;
     }
 
-    /* 右上ツールボタン群（上部余白調整） */
+    /* 右上ツールボタン群 */
     .top-right-bar {
       position: absolute;
       top: max(22px, env(safe-area-inset-top, 22px));
@@ -145,7 +171,7 @@
       border: 1px solid rgba(0,0,0,0.1);
     }
 
-    /* 共通モーダル */
+    /* モーダル */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -218,11 +244,18 @@
 
   <div id="map"></div>
 
-  <!-- 左上: インカメラ回避型 情報バッジ -->
+  <!-- 左上: 方角文字＋本格磁針バッジ -->
   <div class="info-widget">
-    <div id="compassDial" class="compass-dial">▲</div>
+    <div class="compass-container" onclick="requestOrientationPermission()" title="コンパス（タップでセンサー起動）">
+      <div id="compassNeedle" class="compass-needle">
+        <div class="needle-n"></div>
+        <div class="needle-s"></div>
+      </div>
+    </div>
     <div>
-      <span id="sunTimeText">日没 --:--</span> | <span id="tideText" style="color:#0277bd;">潮汐計算中</span>
+      <span id="headingText" style="color:#d84315;">北 (0°)</span> | 
+      <span id="sunTimeText">日没 --:--</span> | 
+      <span id="tideText" style="color:#0277bd;">潮汐</span>
     </div>
   </div>
 
@@ -591,7 +624,45 @@
       if (d) document.getElementById('guideContent').innerHTML = `<b>${d.name}</b><br>🎯 <b>狙う地質:</b> ${d.targetGeo}<br><span style="color:#455a64;">${d.tips}</span>`;
     }
 
-    // 4. EXIF解析＆写真一括
+    // 4. 電子コンパス（リアルタイム16方位＆磁針回転）
+    function getDirectionName(deg) {
+      const directions = ['北', '北北東', '北東', '東北東', '東', '東南東', '南東', '南南東', '南', '南南西', '南西', '西南西', '西', '西北西', '北西', '北北西'];
+      const index = Math.round(deg / 22.5) % 16;
+      return directions[index];
+    }
+
+    function handleOrientation(e) {
+      let heading = null;
+      if (e.webkitCompassHeading !== undefined) {
+        heading = e.webkitCompassHeading; // iOS (真北/磁北)
+      } else if (e.alpha !== null) {
+        heading = (360 - e.alpha) % 360; // Android
+      }
+
+      if (heading !== null) {
+        const deg = Math.round(heading);
+        document.getElementById('compassNeedle').style.transform = `rotate(${deg}deg)`;
+        document.getElementById('headingText').innerText = `${getDirectionName(deg)} (${deg}°)`;
+      }
+    }
+
+    if (window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', handleOrientation, true);
+    }
+
+    function requestOrientationPermission() {
+      if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission()
+          .then(permissionState => {
+            if (permissionState === 'granted') {
+              window.addEventListener('deviceorientation', handleOrientation, true);
+            }
+          })
+          .catch(console.error);
+      }
+    }
+
+    // 5. EXIF解析＆写真一括
     let detectedExifLatLng = null;
     function checkExifLocation(input) {
       const file = input.files[0];
@@ -665,7 +736,7 @@
       closeModal('dataModal');
     }
 
-    // 5. プライバシー保護
+    // 6. プライバシー保護
     let isPrivacy = false;
     function togglePrivacy() {
       isPrivacy = !isPrivacy;
@@ -678,7 +749,7 @@
       return isPrivacy ? (Math.floor(val) + '.' + String(Math.abs(val) % 1).slice(2, 4) + '***') : val.toFixed(4);
     }
 
-    // 6. スリープ防止
+    // 7. スリープ防止
     let wakeLock = null;
     async function toggleWakeLock() {
       if ('wakeLock' in navigator) {
@@ -697,14 +768,7 @@
       } else { alert('非対応端末です'); }
     }
 
-    // 7. コンパス・日没・潮汐
-    if (window.DeviceOrientationEvent) {
-      window.addEventListener('deviceorientation', (e) => {
-        let heading = e.webkitCompassHeading || (360 - e.alpha);
-        if (heading) document.getElementById('compassDial').style.transform = `rotate(${heading}deg)`;
-      }, true);
-    }
-
+    // 8. 日没・潮汐計算
     function updateSunAndTide(lat, lng) {
       const now = new Date();
       const start = new Date(now.getFullYear(), 0, 0);
@@ -731,7 +795,7 @@
     }
     updateSunAndTide(37.4, 139.0);
 
-    // 8. 距離計測
+    // 9. 距離計測
     let isMeasuring = false;
     let measurePoints = [];
     let measureLine = L.polyline([], { color: '#0288d1', weight: 4, dashArray: '4, 4' }).addTo(map);
@@ -746,7 +810,7 @@
       closeModal('toolsModal');
     }
 
-    // 9. GPS軌跡
+    // 10. GPS軌跡
     let isTracking = false;
     let watchId = null;
     let trackLatLngs = [];
@@ -776,7 +840,7 @@
       }
     });
 
-    // 10. 採集ログ＆トレカ生成
+    // 11. 採集ログ＆トレカ生成
     const logLayer = L.layerGroup().addTo(map);
     let selectedLatLng = null;
     let currentCardIndex = null;
@@ -973,7 +1037,7 @@
 
     loadLogs();
 
-    // 11. 簡易鑑定
+    // 12. 簡易鑑定
     function runDiagnosis() {
       const trans = document.getElementById('diagTrans').value;
       const luster = document.getElementById('diagLuster').value;
@@ -997,7 +1061,7 @@
       resDiv.innerHTML = '<b style="color:#6a1b9a;">🔍 候補:</b><br>' + cand.join('<br><br>');
     }
 
-    // 12. バックアップ
+    // 13. バックアップ
     function exportLogs() {
       const logs = localStorage.getItem('stone_logs') || '[]';
       const a = document.createElement('a');
@@ -1025,7 +1089,7 @@
       reader.readAsText(file);
     }
 
-    // 13. オフライン保存
+    // 14. オフライン保存
     async function updateCacheCount() {
       const keys = await tileDB.keys();
       document.getElementById('cacheStatus').innerText = `キャッシュ: ${keys.length}枚`;
@@ -1075,7 +1139,7 @@
       updateCacheCount();
     });
 
-    // 14. GPSボタン
+    // 15. GPSボタン
     document.getElementById('gpsBtn').addEventListener('click', () => {
       if (!navigator.geolocation) return alert('GPS非対応');
       navigator.geolocation.getCurrentPosition(
