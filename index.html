@@ -6,21 +6,24 @@
   <title>先生専用・石拾い地質マップ</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: sans-serif; }
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     #map { width: 100%; height: 100%; }
 
-    /* 操作パネル */
-    .control-box {
+    /* 操作バー */
+    .top-bar {
       position: absolute;
-      top: 12px;
-      right: 12px;
+      top: 10px;
+      right: 10px;
       z-index: 1000;
       background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(4px);
-      padding: 10px 14px;
+      backdrop-filter: blur(6px);
+      padding: 8px 12px;
       border-radius: 12px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.18);
-      font-size: 13px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
     .gps-btn {
       position: absolute;
@@ -31,38 +34,96 @@
       color: white;
       border: none;
       border-radius: 50%;
-      width: 54px;
-      height: 54px;
-      font-size: 24px;
+      width: 52px;
+      height: 52px;
+      font-size: 22px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       cursor: pointer;
     }
 
-    /* ポップアップ装飾 */
-    .info-card { min-width: 240px; font-size: 13px; line-height: 1.5; }
-    .info-card h4 { margin: 0 0 6px 0; color: #2c3e50; font-size: 15px; border-bottom: 2px solid #ff5722; padding-bottom: 4px; }
-    .stone-tag-box { margin-top: 8px; padding: 8px; background: #fff8e1; border-radius: 8px; border: 1px solid #ffe082; }
-    .stone-title { font-weight: bold; color: #d84315; margin-bottom: 4px; font-size: 13px; }
-    .stone-list { color: #37474f; font-size: 12px; margin: 0; padding-left: 18px; }
-    .debug-badge { font-size: 10px; color: #9e9e9e; margin-top: 6px; text-align: right; }
+    /* お宝ガイドドロワー（下部パネル） */
+    .guide-panel {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(8px);
+      border-top-left-radius: 16px;
+      border-top-right-radius: 16px;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+      padding: 12px 16px;
+      max-height: 40vh;
+      overflow-y: auto;
+      transition: transform 0.3s ease;
+    }
+    .guide-title { font-weight: bold; font-size: 14px; color: #2c3e50; margin-bottom: 8px; display: flex; justify-content: space-between; }
+    .color-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .chip {
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      border: 1px solid rgba(0,0,0,0.1);
+      color: #333;
+    }
+    .chip:hover { opacity: 0.85; transform: scale(1.02); }
+
+    /* ポップアップ */
+    .info-card { min-width: 220px; font-size: 13px; line-height: 1.5; }
+    .info-card h4 { margin: 0 0 6px 0; color: #d84315; font-size: 14px; }
+    .btn-action {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 4px 10px;
+      background: #1976d2;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
 
   <div id="map"></div>
 
-  <!-- 地質図の濃さスライダー -->
-  <div class="control-box">
-    <label><b>地質図の濃さ</b></label><br>
-    <input id="opacitySlider" type="range" min="0" max="1" step="0.05" value="0.6" style="width: 130px;">
+  <!-- 地質図の濃さ調整 -->
+  <div class="top-bar">
+    <div><b>地質図の濃さ</b></div>
+    <input id="opacitySlider" type="range" min="0" max="1" step="0.05" value="0.65" style="width: 120px;">
   </div>
 
-  <!-- GPSボタン -->
+  <!-- GPS現在地ボタン -->
   <button id="gpsBtn" class="gps-btn" title="現在地を表示">📍</button>
+
+  <!-- お宝石・地質ガイドパネル -->
+  <div class="guide-panel" id="guidePanel">
+    <div class="guide-title">
+      <span>⛏️ 地質色とお宝石クイック早見表</span>
+      <span style="font-size:11px; color:#888;">色をタップ！</span>
+    </div>
+    
+    <div class="color-chips">
+      <div class="chip" style="background:#ffcdd2;" onclick="showGuide('granite')">🌸 ピンク系（花崗岩・深成岩）</div>
+      <div class="chip" style="background:#ffe0b2;" onclick="showGuide('rhyolite')">🍊 オレンジ系（流紋岩・凝灰岩）</div>
+      <div class="chip" style="background:#c8e6c9;" onclick="showGuide('serpentine')">🌿 緑・深緑（蛇紋岩・変成岩）</div>
+      <div class="chip" style="background:#bbdefb;" onclick="showGuide('sediment')">💧 水色・青系（砂岩・泥岩・堆積層）</div>
+      <div class="chip" style="background:#e1bee7;" onclick="showGuide('chert')">🍇 紫・赤褐色（チャート・珪質岩）</div>
+      <div class="chip" style="background:#cfd8dc;" onclick="showGuide('basalt')">🪨 灰色・濃灰（玄武岩・安山岩）</div>
+    </div>
+
+    <div id="guideContent" style="font-size:12px; line-height:1.6; color:#37474f; background:#fff; padding:10px; border-radius:8px; border:1px solid #eee;">
+      地図上の地質の色に近いボタンをタップすると、ここで採れるお宝石と特徴が表示されるよ！
+    </div>
+  </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // 1. 地図の初期化（新潟エリア）
+    // 1. 地図初期化
     const map = L.map('map', { zoomControl: false }).setView([37.4, 139.0], 9);
     L.control.zoom({ position: 'topleft' }).addTo(map);
 
@@ -72,10 +133,10 @@
       attribution: '&copy; <a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>'
     }).addTo(map);
 
-    // 産総研 シームレス地質図V2タイル
+    // 産総研 20万分の1シームレス地質図V2
     const geologyLayer = L.tileLayer('https://gbank.gsj.jp/seamless/v2/api/1.2/tiles/{z}/{y}/{x}.png', {
       maxZoom: 16,
-      opacity: 0.6,
+      opacity: 0.65,
       attribution: '&copy; <a href="https://gbank.gsj.jp/seamless/">産総研 地質調査総合センター</a>'
     }).addTo(map);
 
@@ -83,166 +144,70 @@
       geologyLayer.setOpacity(e.target.value);
     });
 
-    // 2. お宝判定辞書
-    const mineralGuide = [
-      {
-        keywords: ['花崗岩', '深成岩', 'ペグマタイト', '花崗斑岩', '閃緑岩', '斑れい岩'],
-        title: '💎 石英・鉱物の宝庫',
-        stones: ['石英（水晶 / 煙水晶）', '長石', '雲母', 'ざくろ石（ガーネット）', '電気石（トルマリン）']
+    // 2. お宝データベース
+    const guideDB = {
+      granite: {
+        title: '🌸 ピンク系：花崗岩・ペグマタイト地帯',
+        stones: ['石英（水晶 / 煙水晶）', '長石（ムーンストーン質）', '雲母', 'ざくろ石（ガーネット）', '電気石（トルマリン）'],
+        desc: 'マグマが地下深くでゆっくり冷え固まった岩石。川原に白〜ピンクのツブツブ石が多い場所！キラキラ光る鉱物や透明な水晶の結晶が見つかりやすい大本命地帯です。'
       },
-      {
-        keywords: ['流紋岩', 'デイサイト', '凝灰岩', '火山砕屑', '酸性火山岩', '溶結凝灰岩'],
-        title: '✨ 瑪瑙・ジャスパー・シリカ系',
-        stones: ['メノウ（瑪瑙）', '玉髄（カルセドニー）', '碧玉（ジャスパー）', 'オパール（蛋白石）', '黒曜石']
+      rhyolite: {
+        title: '🍊 オレンジ・黄色系：流紋岩・デイサイト・凝灰岩',
+        stones: ['メノウ（瑪瑙）', '玉髄（カルセドニー）', '碧玉（ジャスパー）', 'オパール（蛋白石）', '黒曜石'],
+        desc: 'シリカ（二酸化ケイ素）を多く含む火山岩。石拾い一番人気の「メノウ」や縞模様のジャスパーが最も期待できるエリア！隙間（晶洞）がある転石を狙おう。'
       },
-      {
-        keywords: ['玄武岩', '安山岩', '火山岩'],
-        title: '🌋 火山岩の晶洞鉱物',
-        stones: ['ゼオライト（沸石）', '方解石（カルサイト）', 'かんらん石（ペリドット）', 'メノウ']
+      serpentine: {
+        title: '🌿 緑・深緑色系：蛇紋岩・かんらん岩帯',
+        stones: ['ヒスイ（蛇紋岩帯に随伴）', 'ネフライト（軟玉）', '滑石', 'クロム鉄鉱', '磁鉄鉱'],
+        desc: 'マントル由来の超苦鉄質岩。ぬめり感のある緑色の石が多い。糸魚川周辺など、ヒスイ探しの最重要ターゲット地質！磁石がくっつく石も見つかります。'
       },
-      {
-        keywords: ['蛇紋岩', '超苦鉄質岩', 'かんらん岩', '変成岩'],
-        title: '🟢 翡翠・変成鉱物の可能性',
-        stones: ['ヒスイ（蛇紋岩帯に随伴）', '滑石', '石綿', 'クロム鉄鉱', '磁鉄鉱']
+      sediment: {
+        title: '💧 水色・薄青系：泥岩・頁岩・砂岩（堆積岩）',
+        stones: ['化石（アンモナイト・貝・葉）', '珪化木（木の化石）', '黄鉄鉱ノジュール', '方解石脈'],
+        desc: '太古の海底や湖底に砂泥が積もって固まった層。丸っこい団塊（ノジュール）を割ると中に化石や結晶が入っていることがあります！'
       },
-      {
-        keywords: ['チャート', '珪質', '珪岩'],
-        title: '🔴 硬質シリカ・放散虫堆積岩',
-        stones: ['赤石（レッドジャスパー）', 'フリント（火打石）', '放散虫化石']
+      chert: {
+        title: '🍇 紫・赤褐色系：チャート・珪質岩',
+        stones: ['赤石（レッドジャスパー）', 'フリント（火打石）', '放散虫化石'],
+        desc: 'ガラス質の微小プランクトンが堆積した超硬い石。ハンマーで叩くと火花が出るほどの硬度。川原で角が立っていて赤や緑のツルツルした綺麗な石が見つかります。'
       },
-      {
-        keywords: ['結晶片岩', '三波川', '片麻岩', '千枚岩', 'マイロナイト'],
-        title: '🌈 結晶片岩・変成鉱物',
-        stones: ['紅簾石（ピンクの石）', '緑泥石', '藍晶石（カイヤナイト）', 'ざくろ石']
-      },
-      {
-        keywords: ['泥岩', '頁岩', '砂岩', '堆積岩', '礫岩', 'シルト岩'],
-        title: '🐚 化石・ノジュールの可能性',
-        stones: ['アンモナイト・貝化石', '植物化石 / 珪化木', '黄鉄鉱ノジュール', '方解石脈']
-      },
-      {
-        keywords: ['石灰岩', '苦灰岩', 'ドロマイト'],
-        title: '⚪ カルサイト・古生代化石',
-        stones: ['方解石（カルサイト結晶）', 'アラゴナイト', 'フズリナ・サンゴ化石']
+      basalt: {
+        title: '🪨 灰色・黒系：玄武岩・安山岩',
+        stones: ['ゼオライト（沸石）', '方解石（カルサイト結晶）', 'かんらん石（ペリドット結晶）'],
+        desc: '火山から吹き出た溶岩。穴ぼこ（気泡）の中に白くキラキラした沸石や方解石、緑色のペリドット微小結晶が入っていることがあります。'
       }
-    ];
+    };
 
-    function matchStones(text) {
-      if (!text) return null;
-      for (const guide of mineralGuide) {
-        if (guide.keywords.some(k => text.includes(k))) {
-          return guide;
-        }
-      }
-      return null;
+    function showGuide(key) {
+      const data = guideDB[key];
+      if (!data) return;
+      document.getElementById('guideContent').innerHTML = `
+        <div style="font-weight:bold; color:#d84315; font-size:13px; margin-bottom:4px;">${data.title}</div>
+        <div style="margin-bottom:6px;"><b>💎 期待できる石:</b> <span style="color:#1565c0;">${data.stones.join('、')}</span></div>
+        <div style="font-size:11px; color:#555;">${data.desc}</div>
+      `;
     }
 
-    // 3. 4重フェイルオーバー通信エンジン
-    async function fetchGeology(lat, lng) {
-      const rawApi = `https://gbank.gsj.jp/seamless/v2/api/1.2/point?lat=${lat.toFixed(5)}&lng=${lng.toFixed(5)}`;
-      
-      // ルート1: AllOrigins (JSON Wrapper) - 一番確実
-      try {
-        const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(rawApi)}`);
-        if (res.ok) {
-          const json = await res.json();
-          if (json && json.contents) {
-            const parsed = JSON.parse(json.contents);
-            if (parsed) return { data: parsed, server: 'AllOrigins' };
-          }
-        }
-      } catch (e) { console.warn('Route 1 failed', e); }
-
-      // ルート2: CodeTabs Proxy
-      try {
-        const res = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rawApi)}`);
-        if (res.ok) {
-          const parsed = await res.json();
-          if (parsed) return { data: parsed, server: 'CodeTabs' };
-        }
-      } catch (e) { console.warn('Route 2 failed', e); }
-
-      // ルート3: Afeld Proxy
-      try {
-        const res = await fetch(`https://jsonp.afeld.me/?url=${encodeURIComponent(rawApi)}`);
-        if (res.ok) {
-          const parsed = await res.json();
-          if (parsed) return { data: parsed, server: 'Afeld' };
-        }
-      } catch (e) { console.warn('Route 3 failed', e); }
-
-      // ルート4: Direct Fetch
-      try {
-        const res = await fetch(rawApi);
-        if (res.ok) {
-          const parsed = await res.json();
-          if (parsed) return { data: parsed, server: 'Direct' };
-        }
-      } catch (e) { console.warn('Route 4 failed', e); }
-
-      throw new Error('地質サーバーにアクセスできませんでした');
-    }
-
-    // 4. 地図クリックイベント
-    map.on('click', async function(e) {
+    // 3. 地図クリックでピン立て＆公式地質図リンク
+    let currentMarker = null;
+    map.on('click', function(e) {
       const { lat, lng } = e.latlng;
-      const popup = L.popup().setLatLng(e.latlng).setContent('🔍 地質データを照会中...').openOn(map);
+      if (currentMarker) map.removeLayer(currentMarker);
 
-      try {
-        const { data: rawData, server } = await fetchGeology(lat, lng);
-        const data = Array.isArray(rawData) ? rawData[0] : rawData;
+      const naviUrl = `https://gbank.gsj.jp/seamless/v2/viewer/?lat=${lat.toFixed(5)}&lng=${lng.toFixed(5)}&z=14`;
 
-        if (data && (data.title || data.litho || data.formation || data.group || data.symbol || data.age)) {
-          const title = data.title || data.formation || data.group || (data.symbol ? `地質区分: ${data.symbol}` : '地質名未定義');
-          const age = data.age || data.formation_age || '時代未詳';
-          const litho = data.litho || data.lithology || '詳細情報なし';
-          const group = data.group || data.formation || '';
-
-          const searchTarget = `${title} ${litho} ${group}`;
-          const match = matchStones(searchTarget);
-
-          let stoneHtml = '';
-          if (match) {
-            stoneHtml = `
-              <div class="stone-tag-box">
-                <div class="stone-title">${match.title}</div>
-                <ul class="stone-list">
-                  ${match.stones.map(s => `<li>${s}</li>`).join('')}
-                </ul>
-              </div>
-            `;
-          } else {
-            stoneHtml = `
-              <div class="stone-tag-box">
-                <div class="stone-title">⛏️ 採取のヒント</div>
-                <div style="font-size:11px; color:#666;">石英脈や上流からの転石を探してみよう！</div>
-              </div>
-            `;
-          }
-
-          popup.setContent(`
-            <div class="info-card">
-              <h4>🗺️ ${title}</h4>
-              <div><b>年代/層:</b> ${age} ${group && group !== title ? `(${group})` : ''}</div>
-              <div><b>岩相:</b> ${litho}</div>
-              ${stoneHtml}
-              <div class="debug-badge">通信経由: ${server}</div>
-            </div>
-          `);
-        } else {
-          popup.setContent('<div class="info-card">地質情報が見つかりませんでした（海域やデータ未整備地域です）。</div>');
-        }
-      } catch (err) {
-        popup.setContent(`
-          <div class="info-card">
-            ⚠️ <b>データ取得に失敗しました</b><br>
-            <div style="font-size:11px; color:#c62828; margin-top:4px;">${err.message}</div>
-          </div>
-        `);
-      }
+      currentMarker = L.marker([lat, lng]).addTo(map);
+      currentMarker.bindPopup(`
+        <div class="info-card">
+          <h4>📍 選択地点</h4>
+          <div><b>座標:</b> ${lat.toFixed(4)}, ${lng.toFixed(4)}</div>
+          <div style="font-size:11px; color:#666; margin-top:4px;">下の早見表で地質の色をチェック！</div>
+          <a href="${naviUrl}" target="_blank" class="btn-action">産総研 公式詳細を見る ↗</a>
+        </div>
+      `).openPopup();
     });
 
-    // 5. GPSボタン
+    // 4. GPSボタン
     document.getElementById('gpsBtn').addEventListener('click', () => {
       if (!navigator.geolocation) {
         alert('位置情報サービスが利用できません');
