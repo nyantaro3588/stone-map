@@ -3,28 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>先生専用・石拾い地質マップ</title>
+  <title>先生専用・石拾い地質＆採集マップ</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     #map { width: 100%; height: 100%; }
 
-    /* 操作バー */
-    .top-bar {
+    /* 上部コントロールバー */
+    .top-panel {
       position: absolute;
       top: 10px;
       right: 10px;
       z-index: 1000;
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(6px);
-      padding: 8px 12px;
+      padding: 10px 14px;
       border-radius: 12px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.18);
       font-size: 12px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 8px;
     }
+    .base-select {
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    /* GPSボタン */
     .gps-btn {
       position: absolute;
       bottom: 24px;
@@ -41,49 +50,80 @@
       cursor: pointer;
     }
 
-    /* お宝ガイドドロワー（下部パネル） */
+    /* 下部お宝ガイドパネル */
     .guide-panel {
       position: absolute;
       bottom: 0;
       left: 0;
       right: 0;
-      z-index: 1000;
+      z-index: 999;
       background: rgba(255, 255, 255, 0.96);
       backdrop-filter: blur(8px);
       border-top-left-radius: 16px;
       border-top-right-radius: 16px;
       box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
-      padding: 12px 16px;
-      max-height: 40vh;
+      padding: 10px 16px;
+      max-height: 38vh;
       overflow-y: auto;
-      transition: transform 0.3s ease;
     }
-    .guide-title { font-weight: bold; font-size: 14px; color: #2c3e50; margin-bottom: 8px; display: flex; justify-content: space-between; }
-    .color-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .guide-title { font-weight: bold; font-size: 13px; color: #2c3e50; margin-bottom: 6px; }
+    .color-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
     .chip {
-      padding: 5px 10px;
+      padding: 4px 9px;
       border-radius: 20px;
       font-size: 11px;
       font-weight: bold;
       cursor: pointer;
       border: 1px solid rgba(0,0,0,0.1);
-      color: #333;
     }
-    .chip:hover { opacity: 0.85; transform: scale(1.02); }
 
-    /* ポップアップ */
-    .info-card { min-width: 220px; font-size: 13px; line-height: 1.5; }
+    /* ポップアップとログUI */
+    .info-card { min-width: 230px; font-size: 13px; line-height: 1.5; }
     .info-card h4 { margin: 0 0 6px 0; color: #d84315; font-size: 14px; }
+    .btn-row { display: flex; gap: 6px; margin-top: 8px; }
     .btn-action {
-      display: inline-block;
-      margin-top: 6px;
-      padding: 4px 10px;
+      flex: 1;
+      padding: 6px 8px;
       background: #1976d2;
       color: white;
       text-decoration: none;
       border-radius: 6px;
       font-size: 11px;
       font-weight: bold;
+      border: none;
+      text-align: center;
+      cursor: pointer;
+    }
+    .btn-log { background: #388e3c; }
+    .btn-del { background: #d32f2f; }
+
+    /* ログ入力フォームモーダル */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-box {
+      background: white;
+      padding: 16px 20px;
+      border-radius: 12px;
+      width: 85%;
+      max-width: 340px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      font-size: 13px;
+    }
+    .modal-box input, .modal-box textarea {
+      width: 100%;
+      box-sizing: border-box;
+      margin: 6px 0 10px;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 13px;
     }
   </style>
 </head>
@@ -91,90 +131,123 @@
 
   <div id="map"></div>
 
-  <!-- 地質図の濃さ調整 -->
-  <div class="top-bar">
-    <div><b>地質図の濃さ</b></div>
-    <input id="opacitySlider" type="range" min="0" max="1" step="0.05" value="0.65" style="width: 120px;">
+  <!-- 上部設定バー -->
+  <div class="top-panel">
+    <div>
+      <b>🗺️ 地図の種類</b><br>
+      <select id="baseMapSelect" class="base-select" style="width:100%; margin-top:4px;">
+        <option value="pale">淡色地図（見やすい）</option>
+        <option value="photo">航空写真（川原・足場）</option>
+        <option value="std">標準地図</option>
+      </select>
+    </div>
+    <div>
+      <b>地質図の濃さ</b><br>
+      <input id="opacitySlider" type="range" min="0" max="1" step="0.05" value="0.65" style="width: 100%;">
+    </div>
   </div>
 
-  <!-- GPS現在地ボタン -->
   <button id="gpsBtn" class="gps-btn" title="現在地を表示">📍</button>
 
-  <!-- お宝石・地質ガイドパネル -->
-  <div class="guide-panel" id="guidePanel">
-    <div class="guide-title">
-      <span>⛏️ 地質色とお宝石クイック早見表</span>
-      <span style="font-size:11px; color:#888;">色をタップ！</span>
-    </div>
-    
+  <!-- お宝ガイドパネル -->
+  <div class="guide-panel">
+    <div class="guide-title">⛏️ 地質色とお宝石クイック早見表</div>
     <div class="color-chips">
-      <div class="chip" style="background:#ffcdd2;" onclick="showGuide('granite')">🌸 ピンク系（花崗岩・深成岩）</div>
-      <div class="chip" style="background:#ffe0b2;" onclick="showGuide('rhyolite')">🍊 オレンジ系（流紋岩・凝灰岩）</div>
-      <div class="chip" style="background:#c8e6c9;" onclick="showGuide('serpentine')">🌿 緑・深緑（蛇紋岩・変成岩）</div>
-      <div class="chip" style="background:#bbdefb;" onclick="showGuide('sediment')">💧 水色・青系（砂岩・泥岩・堆積層）</div>
-      <div class="chip" style="background:#e1bee7;" onclick="showGuide('chert')">🍇 紫・赤褐色（チャート・珪質岩）</div>
-      <div class="chip" style="background:#cfd8dc;" onclick="showGuide('basalt')">🪨 灰色・濃灰（玄武岩・安山岩）</div>
+      <div class="chip" style="background:#ffcdd2;" onclick="showGuide('granite')">🌸 ピンク系（花崗岩）</div>
+      <div class="chip" style="background:#ffe0b2;" onclick="showGuide('rhyolite')">🍊 オレンジ系（流紋・瑪瑙）</div>
+      <div class="chip" style="background:#c8e6c9;" onclick="showGuide('serpentine')">🌿 緑系（蛇紋・ヒスイ）</div>
+      <div class="chip" style="background:#bbdefb;" onclick="showGuide('sediment')">💧 水色系（堆積岩・化石）</div>
+      <div class="chip" style="background:#e1bee7;" onclick="showGuide('chert')">🍇 紫系（チャート・赤石）</div>
+      <div class="chip" style="background:#cfd8dc;" onclick="showGuide('basalt')">🪨 灰色系（玄武・沸石）</div>
     </div>
+    <div id="guideContent" style="font-size:12px; line-height:1.5; color:#37474f; background:#fff; padding:8px 10px; border-radius:8px; border:1px solid #eee;">
+      地図の色をタップすると、採れるお宝石と特徴が表示されます！
+    </div>
+  </div>
 
-    <div id="guideContent" style="font-size:12px; line-height:1.6; color:#37474f; background:#fff; padding:10px; border-radius:8px; border:1px solid #eee;">
-      地図上の地質の色に近いボタンをタップすると、ここで採れるお宝石と特徴が表示されるよ！
+  <!-- ログ記録モーダル -->
+  <div class="modal-overlay" id="logModal">
+    <div class="modal-box">
+      <h3 style="margin:0 0 10px; color:#2c3e50; font-size:16px;">💎 お宝採集ログを記録</h3>
+      <label><b>見つけた石・鉱物名</b></label>
+      <input type="text" id="logStoneName" placeholder="例: メノウ、水晶、赤石など">
+
+      <label><b>メモ（場所の様子など）</b></label>
+      <textarea id="logMemo" rows="2" placeholder="例: 川原の浅瀬で発見。透明感あり。"></textarea>
+
+      <label><b>写真（スマホカメラ / 画像）</b></label>
+      <input type="file" id="logPhoto" accept="image/*">
+
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button class="btn-action" style="background:#888;" onclick="closeLogModal()">キャンセル</button>
+        <button class="btn-action btn-log" onclick="saveCurrentLog()">保存する</button>
+      </div>
     </div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    // 1. 地図初期化
-    const map = L.map('map', { zoomControl: false }).setView([37.4, 139.0], 9);
-    L.control.zoom({ position: 'topleft' }).addTo(map);
+    // 1. レイヤー定義
+    const baseLayers = {
+      pale: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; 国土地理院' }),
+      photo: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg', { maxZoom: 18, attribution: '&copy; 国土地理院' }),
+      std: L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; 国土地理院' })
+    };
 
-    // 国土地理院・淡色地図
-    L.tileLayer('https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png', {
-      maxZoom: 18,
-      attribution: '&copy; <a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>'
-    }).addTo(map);
-
-    // 産総研 20万分の1シームレス地質図V2
     const geologyLayer = L.tileLayer('https://gbank.gsj.jp/seamless/v2/api/1.2/tiles/{z}/{y}/{x}.png', {
       maxZoom: 16,
       opacity: 0.65,
-      attribution: '&copy; <a href="https://gbank.gsj.jp/seamless/">産総研 地質調査総合センター</a>'
-    }).addTo(map);
+      attribution: '&copy; 産総研'
+    });
 
+    const map = L.map('map', { zoomControl: false, layers: [baseLayers.pale, geologyLayer] }).setView([37.4, 139.0], 9);
+    L.control.zoom({ position: 'topleft' }).addTo(map);
+
+    // ベース地図切り替え
+    let currentBase = baseLayers.pale;
+    document.getElementById('baseMapSelect').addEventListener('change', (e) => {
+      map.removeLayer(currentBase);
+      currentBase = baseLayers[e.target.value];
+      map.addLayer(currentBase);
+      currentBase.bringToBack();
+    });
+
+    // 透明度スライダー
     document.getElementById('opacitySlider').addEventListener('input', (e) => {
       geologyLayer.setOpacity(e.target.value);
     });
 
-    // 2. お宝データベース
+    // 2. お宝ガイドデータ
     const guideDB = {
       granite: {
         title: '🌸 ピンク系：花崗岩・ペグマタイト地帯',
-        stones: ['石英（水晶 / 煙水晶）', '長石（ムーンストーン質）', '雲母', 'ざくろ石（ガーネット）', '電気石（トルマリン）'],
-        desc: 'マグマが地下深くでゆっくり冷え固まった岩石。川原に白〜ピンクのツブツブ石が多い場所！キラキラ光る鉱物や透明な水晶の結晶が見つかりやすい大本命地帯です。'
+        stones: '石英（水晶 / 煙水晶）、長石、雲母、ガーネット',
+        desc: '白〜ピンクのツブツブ岩石。キラキラ光る鉱物や水晶の結晶が見つかりやすい大本命！'
       },
       rhyolite: {
-        title: '🍊 オレンジ・黄色系：流紋岩・デイサイト・凝灰岩',
-        stones: ['メノウ（瑪瑙）', '玉髄（カルセドニー）', '碧玉（ジャスパー）', 'オパール（蛋白石）', '黒曜石'],
-        desc: 'シリカ（二酸化ケイ素）を多く含む火山岩。石拾い一番人気の「メノウ」や縞模様のジャスパーが最も期待できるエリア！隙間（晶洞）がある転石を狙おう。'
+        title: '🍊 オレンジ系：流紋岩・デイサイト・凝灰岩',
+        stones: 'メノウ（瑪瑙）、玉髄、碧玉（ジャスパー）、オパール',
+        desc: '石拾い大人気の「メノウ」が最も期待できるエリア！穴の空いた転石を狙おう。'
       },
       serpentine: {
-        title: '🌿 緑・深緑色系：蛇紋岩・かんらん岩帯',
-        stones: ['ヒスイ（蛇紋岩帯に随伴）', 'ネフライト（軟玉）', '滑石', 'クロム鉄鉱', '磁鉄鉱'],
-        desc: 'マントル由来の超苦鉄質岩。ぬめり感のある緑色の石が多い。糸魚川周辺など、ヒスイ探しの最重要ターゲット地質！磁石がくっつく石も見つかります。'
+        title: '🌿 緑系：蛇紋岩・変成岩帯',
+        stones: 'ヒスイ、ネフライト、滑石、磁鉄鉱',
+        desc: '糸魚川周辺など、ヒスイ探しの最重要地質！磁石がくっつく石も見つかります。'
       },
       sediment: {
-        title: '💧 水色・薄青系：泥岩・頁岩・砂岩（堆積岩）',
-        stones: ['化石（アンモナイト・貝・葉）', '珪化木（木の化石）', '黄鉄鉱ノジュール', '方解石脈'],
-        desc: '太古の海底や湖底に砂泥が積もって固まった層。丸っこい団塊（ノジュール）を割ると中に化石や結晶が入っていることがあります！'
+        title: '💧 水色系：泥岩・頁岩・砂岩（堆積岩）',
+        stones: '化石（貝・葉・アンモナイト）、珪化木、黄鉄鉱',
+        desc: '太古の海底や湖底の層。丸い団塊（ノジュール）を割ると化石が出ることも！'
       },
       chert: {
-        title: '🍇 紫・赤褐色系：チャート・珪質岩',
-        stones: ['赤石（レッドジャスパー）', 'フリント（火打石）', '放散虫化石'],
-        desc: 'ガラス質の微小プランクトンが堆積した超硬い石。ハンマーで叩くと火花が出るほどの硬度。川原で角が立っていて赤や緑のツルツルした綺麗な石が見つかります。'
+        title: '🍇 紫系：チャート・珪質岩',
+        stones: '赤石（レッドジャスパー）、フリント（火打石）',
+        desc: '超硬いガラス質の石。川原で角が立っていて赤や緑のツルツルした石を探そう！'
       },
       basalt: {
-        title: '🪨 灰色・黒系：玄武岩・安山岩',
-        stones: ['ゼオライト（沸石）', '方解石（カルサイト結晶）', 'かんらん石（ペリドット結晶）'],
-        desc: '火山から吹き出た溶岩。穴ぼこ（気泡）の中に白くキラキラした沸石や方解石、緑色のペリドット微小結晶が入っていることがあります。'
+        title: '🪨 灰色系：玄武岩・安山岩',
+        stones: 'ゼオライト（沸石）、方解石、ペリドット結晶',
+        desc: '溶岩の気泡（穴ぼこ）の中に白くキラキラした結晶が入っていることがあります。'
       }
     };
 
@@ -182,41 +255,133 @@
       const data = guideDB[key];
       if (!data) return;
       document.getElementById('guideContent').innerHTML = `
-        <div style="font-weight:bold; color:#d84315; font-size:13px; margin-bottom:4px;">${data.title}</div>
-        <div style="margin-bottom:6px;"><b>💎 期待できる石:</b> <span style="color:#1565c0;">${data.stones.join('、')}</span></div>
-        <div style="font-size:11px; color:#555;">${data.desc}</div>
+        <div style="font-weight:bold; color:#d84315; margin-bottom:2px;">${data.title}</div>
+        <div><b>💎 期待できる石:</b> <span style="color:#1565c0;">${data.stones}</span></div>
+        <div style="font-size:11px; color:#666; margin-top:2px;">${data.desc}</div>
       `;
     }
 
-    // 3. 地図クリックでピン立て＆公式地質図リンク
-    let currentMarker = null;
-    map.on('click', function(e) {
+    // 3. 採集ログ保存機能 (localStorage)
+    const logLayer = L.layerGroup().addTo(map);
+    let selectedLatLng = null;
+
+    function loadLogs() {
+      logLayer.clearLayers();
+      const logs = JSON.parse(localStorage.getItem('stone_logs') || '[]');
+      logs.forEach((item, index) => {
+        const marker = L.marker([item.lat, item.lng], {
+          icon: L.divIcon({
+            className: 'custom-pin',
+            html: '<div style="font-size:24px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.4));">💎</div>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+          })
+        }).addTo(logLayer);
+
+        marker.bindPopup(`
+          <div class="info-card">
+            <h4>💎 ${item.name || '採集ログ'}</h4>
+            <div style="font-size:11px; color:#888;">📅 ${item.date}</div>
+            ${item.photo ? `<img src="${item.photo}" style="width:100%; border-radius:6px; margin:6px 0; max-height:160px; object-fit:cover;">` : ''}
+            <div style="margin:4px 0; color:#333;">${item.memo || 'メモなし'}</div>
+            <div class="btn-row">
+              <button class="btn-action btn-del" onclick="deleteLog(${index})">ログを削除</button>
+            </div>
+          </div>
+        `);
+      });
+    }
+
+    // 地図クリックで選択
+    let tempMarker = null;
+    map.on('click', (e) => {
       const { lat, lng } = e.latlng;
-      if (currentMarker) map.removeLayer(currentMarker);
+      selectedLatLng = { lat, lng };
+      if (tempMarker) map.removeLayer(tempMarker);
 
       const naviUrl = `https://gbank.gsj.jp/seamless/v2/viewer/?lat=${lat.toFixed(5)}&lng=${lng.toFixed(5)}&z=14`;
 
-      currentMarker = L.marker([lat, lng]).addTo(map);
-      currentMarker.bindPopup(`
+      tempMarker = L.marker([lat, lng]).addTo(map);
+      tempMarker.bindPopup(`
         <div class="info-card">
           <h4>📍 選択地点</h4>
           <div><b>座標:</b> ${lat.toFixed(4)}, ${lng.toFixed(4)}</div>
-          <div style="font-size:11px; color:#666; margin-top:4px;">下の早見表で地質の色をチェック！</div>
-          <a href="${naviUrl}" target="_blank" class="btn-action">産総研 公式詳細を見る ↗</a>
+          <div class="btn-row">
+            <button class="btn-action btn-log" onclick="openLogModal()">💎 採集ログを記録</button>
+            <a href="${naviUrl}" target="_blank" class="btn-action">産総研 詳細 ↗</a>
+          </div>
         </div>
       `).openPopup();
     });
 
+    // モーダル操作
+    function openLogModal() {
+      document.getElementById('logStoneName').value = '';
+      document.getElementById('logMemo').value = '';
+      document.getElementById('logPhoto').value = '';
+      document.getElementById('logModal').style.display = 'flex';
+    }
+    function closeLogModal() {
+      document.getElementById('logModal').style.display = 'none';
+    }
+
+    // 画像軽量化＆保存
+    function saveCurrentLog() {
+      const name = document.getElementById('logStoneName').value || '採取した石';
+      const memo = document.getElementById('logMemo').value || '';
+      const file = document.getElementById('logPhoto').files[0];
+      const now = new Date().toLocaleDateString('ja-JP');
+
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const maxDim = 400;
+            let w = img.width, h = img.height;
+            if (w > h && w > maxDim) { h = (h * maxDim) / w; w = maxDim; }
+            else if (h > maxDim) { w = (w * maxDim) / h; h = maxDim; }
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            saveToStorage(name, memo, now, canvas.toDataURL('image/jpeg', 0.7));
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        saveToStorage(name, memo, now, null);
+      }
+    }
+
+    function saveToStorage(name, memo, date, photo) {
+      const logs = JSON.parse(localStorage.getItem('stone_logs') || '[]');
+      logs.push({ lat: selectedLatLng.lat, lng: selectedLatLng.lng, name, memo, date, photo });
+      localStorage.setItem('stone_logs', JSON.stringify(logs));
+      closeLogModal();
+      if (tempMarker) map.removeLayer(tempMarker);
+      loadLogs();
+    }
+
+    window.deleteLog = function(index) {
+      if (!confirm('この採集ログを削除しますか？')) return;
+      const logs = JSON.parse(localStorage.getItem('stone_logs') || '[]');
+      logs.splice(index, 1);
+      localStorage.setItem('stone_logs', JSON.stringify(logs));
+      map.closePopup();
+      loadLogs();
+    };
+
+    // 初期ログ読み込み
+    loadLogs();
+
     // 4. GPSボタン
     document.getElementById('gpsBtn').addEventListener('click', () => {
-      if (!navigator.geolocation) {
-        alert('位置情報サービスが利用できません');
-        return;
-      }
+      if (!navigator.geolocation) return alert('位置情報が利用できません');
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude } = pos.coords;
-          map.setView([latitude, longitude], 14);
+          map.setView([latitude, longitude], 15);
           L.circleMarker([latitude, longitude], { radius: 8, color: '#ff5722', fillOpacity: 0.8 }).addTo(map)
             .bindPopup('現在地').openPopup();
         },
