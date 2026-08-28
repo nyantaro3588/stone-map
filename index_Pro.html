@@ -664,7 +664,6 @@
     function renderHotzones() {
       hotzonesLayer.clearLayers();
       hotzonesData.forEach(z => {
-        // 円形スポットライトゾーン
         const circle = L.circle(z.center, {
           radius: z.radius,
           color: z.color,
@@ -674,7 +673,6 @@
           dashArray: '5, 5'
         }).addTo(hotzonesLayer);
 
-        // センターピン（目印）
         const marker = L.circleMarker(z.center, {
           radius: 6,
           color: '#ffffff',
