@@ -263,6 +263,7 @@
 
   <div id="map"></div>
 
+  <!-- 左上: 2段マルチ情報ウィジェット -->
   <div class="info-widget">
     <div class="compass-container" onclick="requestOrientationPermission()" title="コンパス">
       <div id="compassNeedle" class="compass-needle">
@@ -284,6 +285,7 @@
     </div>
   </div>
 
+  <!-- 右上: 全画面 ＆ 設定メニュー -->
   <div class="top-right-bar">
     <button class="action-fab" onclick="toggleFullScreen()">⛶ 全画面</button>
     <button class="action-fab" onclick="openModal('toolsModal')">
@@ -291,8 +293,10 @@
     </button>
   </div>
 
+  <!-- 右下: GPSボタン -->
   <button id="gpsBtn" class="gps-btn" title="現在地を表示">📍</button>
 
+  <!-- 下部: 引き出し式 お宝早見表 -->
   <div class="bottom-sheet" id="bottomSheet">
     <div class="sheet-header" onclick="toggleBottomSheet()">
       <span id="sheetHeaderTitle">⛏️ お宝早見表＆転石ゾーン</span>
@@ -306,7 +310,7 @@
       </div>
 
       <div id="viewHot">
-        <div style="font-size:10px; color:#555; margin-bottom:4px;">ボタンを押すとその探索エリア全体に自動ジャンプします。</div>
+        <div style="font-size:10px; color:#555; margin-bottom:4px;">ボタンを押すとその探索エリア（円形ゾーン）に自動ジャンプします。</div>
         <div class="color-chips">
           <div class="chip" style="background:#fff9c4; border-color:#fbc02d;" onclick="focusZone('kuji')">🟠 久慈川・玉川（メノウ）</div>
           <div class="chip" style="background:#fffde7; border-color:#fbc02d;" onclick="focusZone('abe')">🟡 安倍川（砂金・重砂）</div>
@@ -347,6 +351,7 @@
     </div>
   </div>
 
+  <!-- モーダル: 設定メニュー -->
   <div class="modal-overlay" id="toolsModal">
     <div class="modal-box">
       <h3>⚙️ Pro版 設定・ツール</h3>
@@ -387,6 +392,7 @@
     </div>
   </div>
 
+  <!-- モーダル: 採集ログ -->
   <div class="modal-overlay" id="logModal">
     <div class="modal-box">
       <h3 style="color:#2e7d32;">💎 採集ログを記録</h3>
@@ -407,6 +413,7 @@
     </div>
   </div>
 
+  <!-- モーダル: マイコレクション図鑑 -->
   <div class="modal-overlay" id="galleryModal">
     <div class="modal-box">
       <h3 style="color:#e65100;">📖 マイコレクション図鑑</h3>
@@ -417,6 +424,7 @@
     </div>
   </div>
 
+  <!-- モーダル: 鑑定 -->
   <div class="modal-overlay" id="diagModal">
     <div class="modal-box">
       <h3 style="color:#6a1b9a;">🔍 拾った石の簡易チェッカー</h3>
@@ -453,6 +461,7 @@
     </div>
   </div>
 
+  <!-- モーダル: データ管理 -->
   <div class="modal-overlay" id="dataModal">
     <div class="modal-box">
       <h3 style="color:#1565c0;">💾 データ管理・写真一括配置</h3>
@@ -470,6 +479,7 @@
     </div>
   </div>
 
+  <!-- モーダル: トレカ -->
   <div class="modal-overlay" id="cardThemeModal">
     <div class="modal-box">
       <h3 style="color:#e65100;">🎴 トレカデザインを選択</h3>
@@ -485,6 +495,7 @@
     </div>
   </div>
 
+  <!-- モーダル: 雨雲防災 -->
   <div class="modal-overlay" id="radarModal">
     <div class="modal-box">
       <h3 style="color:#0097a7;">⛈️ 雨雲レーダー・河川防災</h3>
@@ -497,6 +508,7 @@
     </div>
   </div>
 
+  <!-- モーダル: マナー・出典 -->
   <div class="modal-overlay" id="infoModal">
     <div class="modal-box">
       <h3 style="color:#37474f;">ℹ️ 採集マナー・出典情報</h3>
@@ -594,89 +606,88 @@
       document.getElementById('opacityVal').innerText = Math.round(e.target.value * 100) + '%';
     });
 
-    // 3. Pro版限定：全国転石ホットゾーン（面・ポリゴンエリア）
+    // 3. Pro版限定：円形スポットライト・転石ホットゾーン
     const hotzonesData = [
       {
         id: 'kuji',
         name: '久慈川・玉川 中流川原エリア',
         color: '#ff9800',
-        coords: [
-          [36.688, 140.345], [36.692, 140.365], [36.655, 140.405],
-          [36.610, 140.448], [36.585, 140.475], [36.578, 140.450],
-          [36.618, 140.412], [36.660, 140.365]
-        ],
-        info: '<b>🟠 久慈川・玉川 メノウ転石エリア</b><br>💎 <b>対象:</b> 瑪瑙（赤・黄縞）、玉髄、碧玉、珪化木<br>⛏️ <b>探索のコツ:</b> 上流の流紋岩層から供給されたメノウが集まる広い砂利原。水深10〜20cmの浅瀬で濡れた状態で光を透す石を探そう！'
+        center: [36.635, 140.405],
+        radius: 3500, // 半径 3.5km
+        info: '<b>🟠 久慈川・玉川 メノウ探索ゾーン</b><br>💎 <b>対象:</b> 瑪瑙（赤・黄縞）、玉髄、碧玉、珪化木<br>⛏️ <b>探索のコツ:</b> 上流の流紋岩層から供給されたメノウが集まる広い砂利原。水深10〜20cmの浅瀬で濡れた状態で光を透す石を探そう！'
       },
       {
         id: 'abe',
         name: '安倍川 梅ヶ島〜中流砂金エリア',
         color: '#fbc02d',
-        coords: [
-          [35.310, 138.320], [35.315, 138.350], [35.240, 138.355],
-          [35.150, 138.365], [35.080, 138.385], [35.075, 138.360],
-          [35.160, 138.330], [35.250, 138.320]
-        ],
-        info: '<b>🟡 安倍川 砂金・金鉱石エリア</b><br>💎 <b>対象:</b> 砂金、含金石英脈（銀黒）、黄鉄鉱<br>⛏️ <b>探索のコツ:</b> 金山水系由来。川の蛇行内側の砂州や、岩盤（カッチャ）の隙間に溜まった重い黒砂をパンニング！'
+        center: [35.185, 138.335],
+        radius: 4000, // 半径 4km
+        info: '<b>🟡 安倍川 砂金・金鉱石ゾーン</b><br>💎 <b>対象:</b> 砂金、含金石英脈（銀黒）、黄鉄鉱<br>⛏️ <b>探索のコツ:</b> 金山水系由来。川の蛇行内側の砂州や、岩盤（カッチャ）の隙間に溜まった重い黒砂をパンニング！'
       },
       {
         id: 'itoigawa',
         name: '糸魚川〜宮崎 ヒスイ海岸漂着エリア',
         color: '#4caf50',
-        coords: [
-          [37.050, 137.865], [37.035, 137.865], [36.965, 137.545],
-          [36.985, 137.535], [37.015, 137.675], [37.045, 137.800]
-        ],
-        info: '<b>🟢 糸魚川〜宮崎 ヒスイ海岸エリア</b><br>💎 <b>対象:</b> ヒスイ（本翡翠）、ネフライト、ロディン岩<br>⛏️ <b>探索のコツ:</b> 姫川・青海川から流出し沿岸流で打ち上げられる漂着ゾーン。波打ち際でずっしり重く、角ばって油光沢のある白〜緑の石を探そう。（※川の上流保護地区は採取禁止）'
+        center: [37.005, 137.685],
+        radius: 5000, // 半径 5km
+        info: '<b>🟢 糸魚川〜宮崎 ヒスイ海岸ゾーン</b><br>💎 <b>対象:</b> ヒスイ（本翡翠）、ネフライト、ロディン岩<br>⛏️ <b>探索のコツ:</b> 姫川・青海川から流出し沿岸流で打ち上げられる漂着ゾーン。波打ち際でずっしり重く、角ばって油光沢のある白〜緑の石を探そう。（※川の上流保護地区は採取禁止）'
       },
       {
         id: 'futagami',
         name: '二上山麓 サファイア・柘榴石エリア',
         color: '#ab47bc',
-        coords: [
-          [34.535, 135.655], [34.538, 135.685], [34.505, 135.695],
-          [34.502, 135.665]
-        ],
-        info: '<b>🟣 二上山麓 サファイア探索エリア</b><br>💎 <b>対象:</b> 青色サファイア（微小コランダム）、ガーネット<br>⛏️ <b>探索のコツ:</b> サヌカイト質安山岩が風化した川砂。沢の砂利だまりをすくい、ふるいとパンニング皿で重砂を選別！'
+        center: [34.520, 135.675],
+        radius: 2000, // 半径 2km
+        info: '<b>🟣 二上山麓 サファイア探索ゾーン</b><br>💎 <b>対象:</b> 青色サファイア（微小コランダム）、ガーネット<br>⛏️ <b>探索のコツ:</b> サヌカイト質安山岩が風化した川砂。沢の砂利だまりをすくい、ふるいとパンニング皿で重砂を選別！'
       },
       {
         id: 'sado',
         name: '佐渡 西三川〜羽茂 赤玉石・砂金エリア',
         color: '#e53935',
-        coords: [
-          [37.940, 138.280], [37.945, 138.320], [37.860, 138.365],
-          [37.835, 138.360], [37.855, 138.320], [37.915, 138.285]
-        ],
-        info: '<b>🔴 佐渡・西三川 銘石・砂金エリア</b><br>💎 <b>対象:</b> 佐渡赤玉石（ジャスパー）、砂金<br>⛏️ <b>探索のコツ:</b> 鮮やかな真紅の銘石転石と、歴史ある西三川砂金水系の堆積エリア。'
+        center: [37.890, 138.325],
+        radius: 4000, // 半径 4km
+        info: '<b>🔴 佐渡・西三川 銘石・砂金ゾーン</b><br>💎 <b>対象:</b> 佐渡赤玉石（ジャスパー）、砂金<br>⛏️ <b>探索のコツ:</b> 鮮やかな真紅の銘石転石と、歴史ある西三川砂金水系の堆積エリア。'
       },
       {
         id: 'nakatsugawa',
         name: '中津川・苗木 ペグマタイト・トパーズエリア',
         color: '#8e24aa',
-        coords: [
-          [35.545, 137.450], [35.550, 137.520], [35.480, 137.530],
-          [35.475, 137.460]
-        ],
-        info: '<b>💎 岐阜・中津川 苗木エリア</b><br>💎 <b>対象:</b> トパーズ（黄玉）、煙水晶、アクアマリン、緑柱石<br>⛏️ <b>探索のコツ:</b> 日本三大ペグマタイト地帯。花崗岩が風化した川砂や沢筋の砂利の中から透明な結晶粒を探そう！'
+        center: [35.510, 137.490],
+        radius: 3500, // 半径 3.5km
+        info: '<b>💎 岐阜・中津川 苗木ゾーン</b><br>💎 <b>対象:</b> トパーズ（黄玉）、煙水晶、アクアマリン、緑柱石<br>⛏️ <b>探索のコツ:</b> 日本三大ペグマタイト地帯。花崗岩が風化した川砂や沢筋の砂利の中から透明な結晶粒を探そう！'
       }
     ];
 
     const hotzonesLayer = L.layerGroup().addTo(map);
-    const hotzoneShapes = {};
+    const hotzoneCircles = {};
 
     function renderHotzones() {
       hotzonesLayer.clearLayers();
       hotzonesData.forEach(z => {
-        const poly = L.polygon(z.coords, {
+        // 円形スポットライトゾーン
+        const circle = L.circle(z.center, {
+          radius: z.radius,
           color: z.color,
           fillColor: z.color,
-          fillOpacity: 0.38,
+          fillOpacity: 0.35,
           weight: 2.5,
-          dashArray: '4, 4'
+          dashArray: '5, 5'
+        }).addTo(hotzonesLayer);
+
+        // センターピン（目印）
+        const marker = L.circleMarker(z.center, {
+          radius: 6,
+          color: '#ffffff',
+          fillColor: z.color,
+          fillOpacity: 1,
+          weight: 2
         }).addTo(hotzonesLayer);
 
         const popupContent = `<div style="font-size:11.5px; line-height:1.45;">${z.info}</div>`;
-        poly.bindPopup(popupContent);
-        hotzoneShapes[z.id] = poly;
+        circle.bindPopup(popupContent);
+        marker.bindPopup(popupContent);
+
+        hotzoneCircles[z.id] = circle;
       });
     }
     renderHotzones();
@@ -698,10 +709,10 @@
 
     function focusZone(id) {
       const z = hotzonesData.find(item => item.id === id);
-      const shape = hotzoneShapes[id];
-      if (z && shape) {
-        map.fitBounds(shape.getBounds(), { padding: [50, 50], maxZoom: 14 });
-        shape.openPopup();
+      const circle = hotzoneCircles[id];
+      if (z && circle) {
+        map.fitBounds(circle.getBounds(), { padding: [40, 40], maxZoom: 14 });
+        circle.openPopup();
         document.getElementById('guideContent').innerHTML = z.info;
       }
     }
