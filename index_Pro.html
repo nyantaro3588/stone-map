@@ -85,6 +85,26 @@
     .info-line-top { display: flex; align-items: center; gap: 4px; }
     .info-line-bottom { display: flex; align-items: center; gap: 4px; font-size: 9.5px; color: #555; }
 
+    /* 左側: Pro穴場・予想フローティングボタン（左手親指エリア） */
+    .left-pro-fab {
+      position: absolute;
+      left: 14px;
+      bottom: 60px;
+      z-index: 1000;
+      background: linear-gradient(135deg, #ff8f00, #d84315);
+      color: #ffffff;
+      border: 2px solid #ffd54f;
+      border-radius: 24px;
+      padding: 9px 14px;
+      font-size: 12px;
+      font-weight: 900;
+      box-shadow: 0 4px 14px rgba(216, 67, 21, 0.45);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
     /* 右上ツールバー */
     .top-right-bar {
       position: absolute;
@@ -117,7 +137,7 @@
       font-weight: 900;
     }
 
-    /* GPSボタン */
+    /* 右下 GPSボタン */
     .gps-btn {
       position: absolute;
       bottom: 54px;
@@ -134,7 +154,7 @@
       cursor: pointer;
     }
 
-    /* 下部ボトムシート */
+    /* 下部ボトムシート（基本図鑑） */
     .bottom-sheet {
       position: absolute;
       bottom: 0;
@@ -152,7 +172,7 @@
       display: flex;
       flex-direction: column;
     }
-    .bottom-sheet.open { max-height: 52vh; }
+    .bottom-sheet.open { max-height: 48vh; }
     .sheet-header {
       padding: 10px 16px;
       display: flex;
@@ -169,11 +189,11 @@
     .guide-tabs { display: flex; gap: 4px; margin-bottom: 6px; }
     .tab-btn {
       flex: 1;
-      padding: 5px;
+      padding: 6px;
       background: #eceff1;
       border: none;
       border-radius: 6px;
-      font-size: 10px;
+      font-size: 10.5px;
       font-weight: bold;
       color: #546e7a;
       cursor: pointer;
@@ -181,19 +201,15 @@
     .tab-btn.active { background: #d84315; color: white; }
     .color-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
     .chip {
-      padding: 4px 7px;
+      padding: 4px 8px;
       border-radius: 14px;
-      font-size: 9.5px;
+      font-size: 10px;
       font-weight: bold;
       cursor: pointer;
       border: 1px solid rgba(0,0,0,0.12);
     }
-    .chip.predict-chip {
-      border: 1.5px dashed #6a1b9a;
-      background: #f3e5f5;
-    }
 
-    /* モーダル */
+    /* モーダル共通 */
     .modal-overlay {
       display: none;
       position: fixed;
@@ -257,6 +273,35 @@
     .menu-item.active { background: #ffebee; border-color: #e53935; color: #c62828; }
     .menu-item.pro-toggle { background: #fff8e1; border-color: #ffd54f; }
 
+    /* Pro穴場リスト用スタイル */
+    .pro-spot-card {
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      border-radius: 8px;
+      background: #fafafa;
+      border: 1px solid #eee;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .pro-spot-card:hover, .pro-spot-card:active {
+      background: #fff8e1;
+      border-color: #ffd54f;
+    }
+    .pro-spot-title {
+      font-size: 11.5px;
+      font-weight: bold;
+      color: #2c3e50;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .pro-spot-desc {
+      font-size: 10px;
+      color: #666;
+      margin-top: 2px;
+      line-height: 1.35;
+    }
+
     .gallery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
     .gallery-card { border: 1px solid #eee; border-radius: 8px; overflow: hidden; background: #fafafa; cursor: pointer; }
     .gallery-card img { width: 100%; height: 80px; object-fit: cover; display: block; }
@@ -267,6 +312,7 @@
 
   <div id="map"></div>
 
+  <!-- 左上: 2段マルチ情報ウィジェット -->
   <div class="info-widget">
     <div class="compass-container" onclick="requestOrientationPermission()" title="コンパス">
       <div id="compassNeedle" class="compass-needle">
@@ -288,6 +334,12 @@
     </div>
   </div>
 
+  <!-- 左下: Pro穴場・予想ボタン（左手親指用） -->
+  <button class="left-pro-fab" onclick="openModal('proSpotsModal')">
+    🔥 穴場・予想 (16)
+  </button>
+
+  <!-- 右上: 全画面 ＆ 設定メニュー -->
   <div class="top-right-bar">
     <button class="action-fab" onclick="toggleFullScreen()">⛶ 全画面</button>
     <button class="action-fab" onclick="openModal('toolsModal')">
@@ -295,50 +347,23 @@
     </button>
   </div>
 
+  <!-- 右下: GPSボタン -->
   <button id="gpsBtn" class="gps-btn" title="現在地を表示">📍</button>
 
+  <!-- 下部: 引き出し式 お宝早見表（基本図鑑） -->
   <div class="bottom-sheet" id="bottomSheet">
     <div class="sheet-header" onclick="toggleBottomSheet()">
-      <span id="sheetHeaderTitle">⛏️ お宝早見表＆転石ゾーン（全国16選）</span>
+      <span id="sheetHeaderTitle">⛏️ お宝早見表（地質＆石逆引き）</span>
       <span id="sheetArrow">▲</span>
     </div>
     <div class="sheet-content">
       <div class="guide-tabs">
-        <button class="tab-btn active" id="tabHot" onclick="switchGuideTab('hot')">🔥 有名産地(10)</button>
-        <button class="tab-btn" id="tabPredict" onclick="switchGuideTab('predict')">🎯 地質予想(6)</button>
-        <button class="tab-btn" id="tabGeo" onclick="switchGuideTab('geo')">🗺️ 地質の色</button>
-        <button class="tab-btn" id="tabStone" onclick="switchGuideTab('stone')">💎 石逆引き</button>
+        <button class="tab-btn active" id="tabGeo" onclick="switchGuideTab('geo')">🗺️ 地質の色</button>
+        <button class="tab-btn" id="tabStone" onclick="switchGuideTab('stone')">💎 石から逆引き</button>
+        <button class="tab-btn" id="tabCode" onclick="switchGuideTab('code')">🔤 地質記号</button>
       </div>
 
-      <div id="viewHot">
-        <div style="font-size:10px; color:#555; margin-bottom:4px;">ボタンを押すとその探索エリアにジャンプします。</div>
-        <div class="color-chips">
-          <div class="chip" style="background:#fff9c4;" onclick="focusZone('kuji')">🟠 久慈川（メノウ/玉髄）</div>
-          <div class="chip" style="background:#fffde7;" onclick="focusZone('abe')">🟡 安倍川（砂金/金鉱石）</div>
-          <div class="chip" style="background:#e8f5e9;" onclick="focusZone('itoigawa')">🟢 糸魚川（ヒスイ海岸）</div>
-          <div class="chip" style="background:#ede7f6;" onclick="focusZone('futagami')">🟣 二上山（サファイア）</div>
-          <div class="chip" style="background:#e0f7fa;" onclick="focusZone('sado')">🔴 佐渡（赤玉石/砂金）</div>
-          <div class="chip" style="background:#f3e5f5;" onclick="focusZone('nakatsugawa')">💎 苗木（トパーズ/煙水晶）</div>
-          <div class="chip" style="background:#fff8e1;" onclick="focusZone('rekinfune')">🪙 歴舟川（北海道砂金）</div>
-          <div class="chip" style="background:#e1f5fe;" onclick="focusZone('tanokami')">✨ 田ノ上山（トパーズ）</div>
-          <div class="chip" style="background:#fce4ec;" onclick="focusZone('hohozaka')">🌈 宝坂（国産オパール）</div>
-          <div class="chip" style="background:#fffde7;" onclick="focusZone('izu_gold')">⛏️ 伊豆・持越（銀黒金鉱）</div>
-        </div>
-      </div>
-
-      <div id="viewPredict" style="display:none;">
-        <div style="font-size:10px; color:#6a1b9a; font-weight:bold; margin-bottom:4px;">地質構造・接触変成帯・河川蛇行から割り出した穴場予想！</div>
-        <div class="color-chips">
-          <div class="chip predict-chip" onclick="focusZone('p_hayakawa')">🎯 山梨・早川（隠し金山砂金）</div>
-          <div class="chip predict-chip" onclick="focusZone('p_agano')">🎯 阿賀野川上流（流紋岩メノウ）</div>
-          <div class="chip predict-chip" onclick="focusZone('p_chichibu')">🎯 秩父・中津川（スカルン鉱物）</div>
-          <div class="chip predict-chip" onclick="focusZone('p_uryu')">🎯 北海道・雨竜川（砂白金/蛇紋岩）</div>
-          <div class="chip predict-chip" onclick="focusZone('p_kofu')">🎯 甲府・荒川渓谷（ペグマ水晶）</div>
-          <div class="chip predict-chip" onclick="focusZone('p_sekikawa')">🎯 愛媛・関川水系（柘榴石/変成岩）</div>
-        </div>
-      </div>
-
-      <div id="viewGeo" style="display:none;">
+      <div id="viewGeo">
         <div class="color-chips">
           <div class="chip" style="background:#ffcdd2;" onclick="showGuide('granite')">🌸 花崗岩（水晶/長石）</div>
           <div class="chip" style="background:#ffe0b2;" onclick="showGuide('rhyolite')">🍊 流紋岩（メノウ/碧玉）</div>
@@ -362,12 +387,44 @@
         </div>
       </div>
 
+      <div id="viewCode" style="display:none; font-size:10px; line-height:1.4; color:#37474f; background:#f9f9f9; padding:6px; border-radius:6px; margin-bottom:4px;">
+        <b>🔤 記号の見方（例: N1_vas = 新第三紀前期 火山岩）</b><br>
+        ・<b>年代:</b> Q（第四紀）、N（新第三紀）、Pg（古第三紀）、K（白亜紀）、J（ジュラ紀）<br>
+        ・<b>岩相:</b> s（堆積岩）、v・vas（火山岩）、p・pam（花崗岩等）、m（蛇紋岩等）
+      </div>
+
       <div id="guideContent" style="font-size:11px; line-height:1.45; color:#37474f; background:#f9f9f9; padding:8px; border-radius:6px; margin-top:4px;">
         ボタンをタップすると、採れるお宝や現場での探し方アドバイスが表示されます！
       </div>
     </div>
   </div>
 
+  <!-- モーダル: Pro穴場＆地質予想メニュー（左ボタンから開く） -->
+  <div class="modal-overlay" id="proSpotsModal">
+    <div class="modal-box">
+      <h3 style="color:#d84315; display:flex; justify-content:space-between; align-items:center;">
+        <span>🔥 全国穴場＆地質予想 (16選)</span>
+        <span class="pro-badge">PRO</span>
+      </h3>
+
+      <div class="guide-tabs" style="margin-bottom:8px;">
+        <button class="tab-btn active" id="modalTabHot" onclick="switchSpotModalTab('hot')">🏆 有名産地 (10)</button>
+        <button class="tab-btn" id="modalTabPredict" onclick="switchSpotModalTab('predict')">🎯 地質推論予想 (6)</button>
+      </div>
+
+      <!-- モーダル内: 有名産地リスト -->
+      <div id="modalViewHot"></div>
+
+      <!-- モーダル内: 地質推論予想リスト -->
+      <div id="modalViewPredict" style="display:none;"></div>
+
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="btn-act" style="background:#888;" onclick="closeModal('proSpotsModal')">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- モーダル: 設定メニュー -->
   <div class="modal-overlay" id="toolsModal">
     <div class="modal-box">
       <h3>⚙️ Pro版 設定・ツール</h3>
@@ -408,6 +465,7 @@
     </div>
   </div>
 
+  <!-- モーダル: 採集ログ -->
   <div class="modal-overlay" id="logModal">
     <div class="modal-box">
       <h3 style="color:#2e7d32;">💎 採集ログを記録</h3>
@@ -428,6 +486,7 @@
     </div>
   </div>
 
+  <!-- モーダル: マイコレクション図鑑 -->
   <div class="modal-overlay" id="galleryModal">
     <div class="modal-box">
       <h3 style="color:#e65100;">📖 マイコレクション図鑑</h3>
@@ -438,6 +497,7 @@
     </div>
   </div>
 
+  <!-- モーダル: 鑑定 -->
   <div class="modal-overlay" id="diagModal">
     <div class="modal-box">
       <h3 style="color:#6a1b9a;">🔍 拾った石の簡易チェッカー</h3>
@@ -474,6 +534,7 @@
     </div>
   </div>
 
+  <!-- モーダル: データ管理 -->
   <div class="modal-overlay" id="dataModal">
     <div class="modal-box">
       <h3 style="color:#1565c0;">💾 データ管理・写真一括配置</h3>
@@ -491,6 +552,7 @@
     </div>
   </div>
 
+  <!-- モーダル: トレカ -->
   <div class="modal-overlay" id="cardThemeModal">
     <div class="modal-box">
       <h3 style="color:#e65100;">🎴 トレカデザインを選択</h3>
@@ -506,6 +568,7 @@
     </div>
   </div>
 
+  <!-- モーダル: 雨雲防災 -->
   <div class="modal-overlay" id="radarModal">
     <div class="modal-box">
       <h3 style="color:#0097a7;">⛈️ 雨雲レーダー・河川防災</h3>
@@ -518,6 +581,7 @@
     </div>
   </div>
 
+  <!-- モーダル: マナー・出典 -->
   <div class="modal-overlay" id="infoModal">
     <div class="modal-box">
       <h3 style="color:#37474f;">ℹ️ 採集マナー・出典情報</h3>
@@ -615,138 +679,154 @@
       document.getElementById('opacityVal').innerText = Math.round(e.target.value * 100) + '%';
     });
 
-    // 3. Pro版限定：全国有名産地(10) ＆ 地質推論予想スポット(6)
+    // 3. 全国16大スポットデータ（有名10＋予想6）
     const hotzonesData = [
       // === 確定有名産地 ===
       {
         id: 'kuji',
         name: '久慈川・玉川 中流川原エリア',
+        badge: '🟠 メノウ・玉髄',
         color: '#ff9800',
         center: [36.635, 140.405],
         radius: 3500,
-        info: '<b>🟠 久慈川・玉川 メノウ探索ゾーン</b><br>💎 <b>対象:</b> 瑪瑙（赤・黄縞）、玉髄、碧玉、珪化木<br>⛏️ <b>探索のコツ:</b> 上流の流紋岩層から供給されたメノウが集まる広い砂利原。水深10〜20cmの浅瀬で濡れた状態で光を透す石を探そう！'
+        desc: '茨城県・常陸大宮〜山方周辺。上流の流紋岩層から流出したメノウ・赤碧玉が集積。'
       },
       {
         id: 'abe',
         name: '安倍川 梅ヶ島〜中流砂金エリア',
+        badge: '🟡 砂金・金鉱石',
         color: '#fbc02d',
         center: [35.185, 138.335],
         radius: 4000,
-        info: '<b>🟡 安倍川 砂金・金鉱石ゾーン</b><br>💎 <b>対象:</b> 砂金、含金石英脈（銀黒）、黄鉄鉱<br>⛏️ <b>探索のコツ:</b> 金山水系由来。川の蛇行内側の砂州や、岩盤（カッチャ）の隙間に溜まった重い黒砂をパンニング！'
+        desc: '静岡県・梅ヶ島金山水系。蛇行の内側砂州や岩盤（カッチャ）の隙間に溜まる重砂をパンニング。'
       },
       {
         id: 'itoigawa',
         name: '糸魚川〜宮崎 ヒスイ海岸漂着エリア',
+        badge: '🟢 本ヒスイ・変成岩',
         color: '#4caf50',
         center: [37.005, 137.685],
         radius: 5000,
-        info: '<b>🟢 糸魚川〜宮崎 ヒスイ海岸ゾーン</b><br>💎 <b>対象:</b> ヒスイ（本翡翠）、ネフライト、ロディン岩<br>⛏️ <b>探索のコツ:</b> 姫川・青海川から流出し沿岸流で打ち上げられる漂着ゾーン。波打ち際でずっしり重く、角ばって油光沢のある白〜緑の石を探そう。（※川の上流保護地区は採取禁止）'
+        desc: '新潟〜富山海岸。姫川・青海川から沿岸流で打ち上げられる漂着ヒスイの超一級帯。'
       },
       {
         id: 'futagami',
         name: '二上山麓 サファイア・柘榴石エリア',
+        badge: '🟣 サファイア・柘榴石',
         color: '#ab47bc',
         center: [34.520, 135.675],
         radius: 2000,
-        info: '<b>🟣 二上山麓 サファイア探索ゾーン</b><br>💎 <b>対象:</b> 青色サファイア（微小コランダム）、ガーネット<br>⛏️ <b>探索のコツ:</b> サヌカイト質安山岩が風化した川砂。沢の砂利だまりをすくい、ふるいとパンニング皿で重砂を選別！'
+        desc: '奈良/大阪・竹内峠周辺。サヌカイト質安山岩が風化した川砂から青色サファイアを抽出。'
       },
       {
         id: 'sado',
         name: '佐渡 西三川〜羽茂 赤玉石・砂金エリア',
+        badge: '🔴 佐渡赤玉石・砂金',
         color: '#e53935',
         center: [37.890, 138.325],
         radius: 4000,
-        info: '<b>🔴 佐渡・西三川 銘石・砂金ゾーン</b><br>💎 <b>対象:</b> 佐渡赤玉石（ジャスパー）、砂金<br>⛏️ <b>探索のコツ:</b> 鮮やかな真紅の銘石転石と、歴史ある西三川砂金水系の堆積エリア。'
+        desc: '新潟県佐渡島。真紅の銘石ジャスパーと歴史ある西三川砂金水系の堆積エリア。'
       },
       {
         id: 'nakatsugawa',
-        name: '中津川・苗木 ペグマタイト・トパーズエリア',
+        name: '中津川・苗木 ペグマタイト鉱物エリア',
+        badge: '💎 トパーズ・煙水晶',
         color: '#8e24aa',
         center: [35.510, 137.490],
         radius: 3500,
-        info: '<b>💎 岐阜・中津川 苗木ゾーン</b><br>💎 <b>対象:</b> トパーズ（黄玉）、煙水晶、アクアマリン、緑柱石<br>⛏️ <b>探索のコツ:</b> 日本三大ペグマタイト地帯。花崗岩が風化した川砂や沢筋の砂利の中から透明な結晶粒を探そう！'
+        desc: '岐阜県・日本三大ペグマタイト。花崗岩風化帯の川砂から透明なトパーズ・水晶結晶を狙う。'
       },
       {
         id: 'rekinfune',
         name: '北海道・歴舟川 砂金探査エリア',
+        badge: '🪙 日本一の砂金河川',
         color: '#fbc02d',
         center: [42.485, 143.150],
         radius: 5000,
-        info: '<b>🪙 北海道・歴舟川 砂金ゾーン</b><br>💎 <b>対象:</b> 砂金、白金（プラチナ）<br>⛏️ <b>探索のコツ:</b> 日本有数の砂金河川。大樹町周辺の広い川原で、草の根や大きな転石の下流側の砂利をパンニング！'
+        desc: '北海道大樹町。大河川の広大な川原で、草の根や大岩下流の砂利をパンニング。'
       },
       {
         id: 'tanokami',
         name: '滋賀・田ノ上山 ペグマタイト鉱物エリア',
+        badge: '✨ トパーズ・緑柱石',
         color: '#0288d1',
         center: [34.935, 135.980],
         radius: 3000,
-        info: '<b>✨ 田ノ上山 トパーズ・水晶ゾーン</b><br>💎 <b>対象:</b> トパーズ、煙水晶、長石<br>⛏️ <b>探索のコツ:</b> 古くから名高い花崗岩ペグマタイト産地。風化して砂利状になった沢筋から結晶を探そう。'
+        desc: '滋賀県大津市。太古より著名なペグマタイト鉱物産地。風化沢筋の砂利を探索。'
       },
       {
         id: 'hohozaka',
         name: '福島・宝坂〜西会津 オパール転石エリア',
+        badge: '🌈 国産オパール・玉髄',
         color: '#e91e63',
         center: [37.610, 139.580],
         radius: 3500,
-        info: '<b>🌈 福島・宝坂 オパールゾーン</b><br>💎 <b>対象:</b> 国産オパール（蛋白石）、玉髄<br>⛏️ <b>探索のコツ:</b> 流紋岩中の気泡に形成されたオパール。沢沿いに転がる白〜淡青色の玉髄ノジュールをチェック！'
+        desc: '福島県西会津。流紋岩中の気泡にできたオパール・玉髄ノジュールの転石地帯。'
       },
       {
         id: 'izu_gold',
         name: '伊豆・土肥〜持越 金鉱石（銀黒）エリア',
+        badge: '⛏️ 銀黒・含金石英脈',
         color: '#c0ca33',
         center: [34.905, 138.825],
         radius: 3500,
-        info: '<b>⛏️ 伊豆・持越 金鉱石ゾーン</b><br>💎 <b>対象:</b> 銀黒（含金石英脈）、黄鉄鉱、方解石<br>⛏️ <b>探索のコツ:</b> 太古の熱水鉱床由来。黒い縞模様が入った緻密な石英転石を探そう！'
+        desc: '静岡県伊豆市。熱水鉱床由来の黒い縞模様が入った緻密な含金石英転石を探す。'
       },
 
       // === 地質推論・予想スポット ===
       {
         id: 'p_hayakawa',
-        name: '🎯【予想】山梨・早川〜雨畑川水系（砂金トラップ）',
+        name: '🎯【予想】山梨・早川〜雨畑川水系',
+        badge: '🎯 隠し金山砂金トラップ',
         color: '#7b1fa2',
         center: [35.420, 138.380],
         radius: 3500,
-        info: '<b>🎯【地質予想】早川 砂金トラップ帯</b><br>💎 <b>予想対象:</b> 砂金、重鉱物<br>🧪 <b>地質推論根拠:</b> 上流に武田信玄の隠し金山（湯之奥金山等）。急峻なV字谷から本流へ合流し流速が落ちる蛇行部内側に比重沈降している可能性大！'
+        desc: '上流に湯之奥金山等。急峻なV字谷から本流へ合流し流速が落ちる蛇行部内側に比重沈降の可能性大！'
       },
       {
         id: 'p_agano',
-        name: '🎯【予想】阿賀野川〜五十母川合流部（流紋岩メノウ）',
+        name: '🎯【予想】阿賀野川〜五十母川合流部',
+        badge: '🎯 流紋岩メノウフロント',
         color: '#7b1fa2',
         center: [37.665, 139.420],
         radius: 4000,
-        info: '<b>🎯【地質予想】阿賀野川 メノウフロント</b><br>💎 <b>予想対象:</b> メノウ、碧玉、玉髄<br>🧪 <b>地質推論根拠:</b> 上流域に大規模な新第三紀中新世の酸性流紋岩層が分布。支流から供給された新鮮な転石が集積する中州・浅瀬に注目！'
+        desc: '上流域に広大な新第三紀酸性流紋岩層。支流から供給された新鮮な転石が集まる未開拓中州！'
       },
       {
         id: 'p_chichibu',
-        name: '🎯【予想】埼玉・秩父 中津川渓谷（接触変成帯鉱物）',
+        name: '🎯【予想】埼玉・秩父 中津川渓谷',
+        badge: '🎯 スカルン接触変成帯',
         color: '#7b1fa2',
         center: [35.975, 138.835],
         radius: 3500,
-        info: '<b>🎯【地質予想】秩父中津川 スカルン鉱物帯</b><br>💎 <b>予想対象:</b> 水晶、ざくろ石、黄鉄鉱、磁鉄鉱<br>🧪 <b>地質推論根拠:</b> 石灰岩層と花崗岩類の接触変成（スカルン）帯。削剥された鉱床成分が沢底の砂利に濃集！'
+        desc: '石灰岩×花崗岩の接触変成スカルン帯。削剥された水晶・ざくろ石・黄鉄鉱が沢底に濃集！'
       },
       {
         id: 'p_uryu',
-        name: '🎯【予想】北海道・雨竜川水系（砂白金/蛇紋岩帯）',
+        name: '🎯【予想】北海道・雨竜川水系',
+        badge: '🎯 砂白金・超苦鉄質帯',
         color: '#7b1fa2',
         center: [44.020, 142.150],
         radius: 4500,
-        info: '<b>🎯【地質予想】雨竜川 砂白金・クロム帯</b><br>💎 <b>予想対象:</b> 砂白金（イリジウム/白金）、砂金、クロム鉄鉱<br>🧪 <b>地質推論根拠:</b> 神居古潭変成帯の超苦鉄質・蛇紋岩層を貫流。岩盤の割れ目に超高比重鉱物がトラップされている可能性！'
+        desc: '神居古潭変成帯の蛇紋岩層を貫流。岩盤の割れ目に超高比重の砂白金・砂金がトラップ！'
       },
       {
         id: 'p_kofu',
-        name: '🎯【予想】山梨・甲府 荒川渓谷（ペグマタイト水晶）',
+        name: '🎯【予想】山梨・甲府 荒川渓谷',
+        badge: '🎯 ペグマタイト高純度水晶',
         color: '#7b1fa2',
         center: [35.735, 138.560],
         radius: 3500,
-        info: '<b>🎯【地質予想】昇仙峡上流 ペグマ水晶帯</b><br>💎 <b>予想対象:</b> 高純度水晶、煙水晶、長石<br>🧪 <b>地質推論根拠:</b> 甲府花崗岩体の風化沢筋。乙女鉱山等の鉱床群から流下した転石が中州の砂利に混入！'
+        desc: '甲府花崗岩体の風化沢筋。乙女鉱山等の鉱床群から流下した水晶転石が中州の砂利に混入！'
       },
       {
         id: 'p_sekikawa',
-        name: '🎯【予想】愛媛・関川〜西条水系（エクロジャイト/柘榴石）',
+        name: '🎯【予想】愛媛・関川〜西条水系',
+        badge: '🎯 エクロジャイト・大型柘榴石',
         color: '#7b1fa2',
         center: [33.925, 133.450],
         radius: 3500,
-        info: '<b>🎯【地質予想】関川 変成岩・ガーネット帯</b><br>💎 <b>予想対象:</b> ざくろ石、エクロジャイト、紅簾石<br>🧪 <b>地質推論根拠:</b> 三波川結晶片岩帯の高圧変成部。川底の重砂中に鮮やかな深紅のガーネット結晶粒が多量沈降！'
+        desc: '三波川変成帯の高圧変成部。川底の重砂中に鮮やかな深紅のガーネット結晶粒が多量沈降！'
       }
     ];
 
@@ -757,7 +837,6 @@
       hotzonesLayer.clearLayers();
       hotzonesData.forEach(z => {
         const isPredict = z.id.startsWith('p_');
-        // 円形スポットライト
         const circle = L.circle(z.center, {
           radius: z.radius,
           color: z.color,
@@ -767,7 +846,6 @@
           dashArray: isPredict ? '6, 6' : '4, 4'
         }).addTo(hotzonesLayer);
 
-        // センターピン（目印）
         const marker = L.circleMarker(z.center, {
           radius: isPredict ? 7 : 6,
           color: '#ffffff',
@@ -776,7 +854,13 @@
           weight: 2
         }).addTo(hotzonesLayer);
 
-        const popupContent = `<div style="font-size:11.5px; line-height:1.45;">${z.info}</div>`;
+        const popupContent = `
+          <div style="font-size:11.5px; line-height:1.45;">
+            <b style="color:${z.color};">${z.name}</b><br>
+            💎 <b>${z.badge}</b><br>
+            <span style="color:#555;">${z.desc}</span>
+          </div>
+        `;
         circle.bindPopup(popupContent);
         marker.bindPopup(popupContent);
 
@@ -784,6 +868,42 @@
       });
     }
     renderHotzones();
+
+    // モーダル内のProリスト構築
+    function buildProSpotList() {
+      const hotContainer = document.getElementById('modalViewHot');
+      const predContainer = document.getElementById('modalViewPredict');
+      hotContainer.innerHTML = '';
+      predContainer.innerHTML = '';
+
+      hotzonesData.forEach(z => {
+        const isPredict = z.id.startsWith('p_');
+        const card = document.createElement('div');
+        card.className = 'pro-spot-card';
+        card.innerHTML = `
+          <div class="pro-spot-title">
+            <span>${z.name}</span>
+            <span style="font-size:9.5px; color:${z.color};">${z.badge}</span>
+          </div>
+          <div class="pro-spot-desc">${z.desc}</div>
+        `;
+        card.onclick = () => {
+          closeModal('proSpotsModal');
+          focusZone(z.id);
+        };
+
+        if (isPredict) predContainer.appendChild(card);
+        else hotContainer.appendChild(card);
+      });
+    }
+    buildProSpotList();
+
+    function switchSpotModalTab(tab) {
+      document.getElementById('modalTabHot').classList.toggle('active', tab === 'hot');
+      document.getElementById('modalTabPredict').classList.toggle('active', tab === 'predict');
+      document.getElementById('modalViewHot').style.display = (tab === 'hot') ? 'block' : 'none';
+      document.getElementById('modalViewPredict').style.display = (tab === 'predict') ? 'block' : 'none';
+    }
 
     let hotzonesVisible = true;
     function toggleHotzones() {
@@ -806,11 +926,10 @@
       if (z && circle) {
         map.fitBounds(circle.getBounds(), { padding: [40, 40], maxZoom: 14 });
         circle.openPopup();
-        document.getElementById('guideContent').innerHTML = z.info;
       }
     }
 
-    // 4. ボトムシート
+    // 4. ボトムシート（基本図鑑）
     function toggleBottomSheet() {
       const sheet = document.getElementById('bottomSheet');
       const arrow = document.getElementById('sheetArrow');
@@ -819,29 +938,13 @@
     }
 
     function switchGuideTab(tab) {
-      document.getElementById('tabHot').classList.remove('active');
-      document.getElementById('tabPredict').classList.remove('active');
-      document.getElementById('tabGeo').classList.remove('active');
-      document.getElementById('tabStone').classList.remove('active');
+      document.getElementById('tabGeo').classList.toggle('active', tab === 'geo');
+      document.getElementById('tabStone').classList.toggle('active', tab === 'stone');
+      document.getElementById('tabCode').classList.toggle('active', tab === 'code');
 
-      document.getElementById('viewHot').style.display = 'none';
-      document.getElementById('viewPredict').style.display = 'none';
-      document.getElementById('viewGeo').style.display = 'none';
-      document.getElementById('viewStone').style.display = 'none';
-
-      if (tab === 'hot') {
-        document.getElementById('tabHot').classList.add('active');
-        document.getElementById('viewHot').style.display = 'block';
-      } else if (tab === 'predict') {
-        document.getElementById('tabPredict').classList.add('active');
-        document.getElementById('viewPredict').style.display = 'block';
-      } else if (tab === 'geo') {
-        document.getElementById('tabGeo').classList.add('active');
-        document.getElementById('viewGeo').style.display = 'block';
-      } else if (tab === 'stone') {
-        document.getElementById('tabStone').classList.add('active');
-        document.getElementById('viewStone').style.display = 'block';
-      }
+      document.getElementById('viewGeo').style.display = (tab === 'geo') ? 'block' : 'none';
+      document.getElementById('viewStone').style.display = (tab === 'stone') ? 'block' : 'none';
+      document.getElementById('viewCode').style.display = (tab === 'code') ? 'block' : 'none';
     }
 
     const guideDB = {
