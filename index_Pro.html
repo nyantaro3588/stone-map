@@ -263,7 +263,6 @@
 
   <div id="map"></div>
 
-  <!-- 左上: 2段マルチ情報ウィジェット -->
   <div class="info-widget">
     <div class="compass-container" onclick="requestOrientationPermission()" title="コンパス">
       <div id="compassNeedle" class="compass-needle">
@@ -285,7 +284,6 @@
     </div>
   </div>
 
-  <!-- 右上: 全画面 ＆ 設定メニュー -->
   <div class="top-right-bar">
     <button class="action-fab" onclick="toggleFullScreen()">⛶ 全画面</button>
     <button class="action-fab" onclick="openModal('toolsModal')">
@@ -293,10 +291,8 @@
     </button>
   </div>
 
-  <!-- 右下: GPSボタン -->
   <button id="gpsBtn" class="gps-btn" title="現在地を表示">📍</button>
 
-  <!-- 下部: 引き出し式 お宝早見表 -->
   <div class="bottom-sheet" id="bottomSheet">
     <div class="sheet-header" onclick="toggleBottomSheet()">
       <span id="sheetHeaderTitle">⛏️ お宝早見表＆転石ゾーン</span>
@@ -304,19 +300,20 @@
     </div>
     <div class="sheet-content">
       <div class="guide-tabs">
-        <button class="tab-btn active" id="tabHot" onclick="switchGuideTab('hot')">🔥 転石ゾーン一覧</button>
+        <button class="tab-btn active" id="tabHot" onclick="switchGuideTab('hot')">🔥 転石エリア一覧</button>
         <button class="tab-btn" id="tabGeo" onclick="switchGuideTab('geo')">🗺️ 地質の色</button>
         <button class="tab-btn" id="tabStone" onclick="switchGuideTab('stone')">💎 石から逆引き</button>
       </div>
 
       <div id="viewHot">
-        <div style="font-size:10px; color:#555; margin-bottom:4px;">ボタンを押すとその川の流路全体に自動ジャンプします。</div>
+        <div style="font-size:10px; color:#555; margin-bottom:4px;">ボタンを押すとその探索エリア全体に自動ジャンプします。</div>
         <div class="color-chips">
           <div class="chip" style="background:#fff9c4; border-color:#fbc02d;" onclick="focusZone('kuji')">🟠 久慈川・玉川（メノウ）</div>
           <div class="chip" style="background:#fffde7; border-color:#fbc02d;" onclick="focusZone('abe')">🟡 安倍川（砂金・重砂）</div>
           <div class="chip" style="background:#e8f5e9; border-color:#81c784;" onclick="focusZone('itoigawa')">🟢 糸魚川海岸（ヒスイ漂着）</div>
           <div class="chip" style="background:#ede7f6; border-color:#b39ddb;" onclick="focusZone('futagami')">🟣 二上山（サファイア）</div>
           <div class="chip" style="background:#e0f7fa; border-color:#80deea;" onclick="focusZone('sado')">🔴 佐渡・羽茂（赤玉石/砂金）</div>
+          <div class="chip" style="background:#f3e5f5; border-color:#ce93d8;" onclick="focusZone('nakatsugawa')">💎 中津川・苗木（トパーズ）</div>
         </div>
       </div>
 
@@ -340,6 +337,7 @@
           <div class="chip" style="background:#e0f7fa;" onclick="showStoneGuide('wood')">🪵 珪化木</div>
           <div class="chip" style="background:#fffde7;" onclick="showStoneGuide('gold')">🪙 砂金・金鉱石</div>
           <div class="chip" style="background:#ede7f6;" onclick="showStoneGuide('sapphire')">💎 サファイア・柘榴石</div>
+          <div class="chip" style="background:#f3e5f5;" onclick="showStoneGuide('topaz')">✨ トパーズ・黄玉</div>
         </div>
       </div>
 
@@ -349,7 +347,6 @@
     </div>
   </div>
 
-  <!-- モーダル: 設定メニュー -->
   <div class="modal-overlay" id="toolsModal">
     <div class="modal-box">
       <h3>⚙️ Pro版 設定・ツール</h3>
@@ -367,7 +364,7 @@
       <input id="opacitySlider" type="range" min="0" max="1" step="0.05" value="0.65">
 
       <div class="menu-grid">
-        <div id="hotzoneToggleBtn" class="menu-item pro-toggle" onclick="toggleHotzones()">🔥 転石ゾーン: ON</div>
+        <div id="hotzoneToggleBtn" class="menu-item pro-toggle" onclick="toggleHotzones()">🔥 転石エリア: ON</div>
         <div id="wakeLockBtn" class="menu-item" onclick="toggleWakeLock()">💡 スリープ防止: OFF</div>
         <div id="trackBtn" class="menu-item">🐾 軌跡記録: OFF</div>
         <div id="privacyBtn" class="menu-item" onclick="togglePrivacy()">🔒 共有保護: OFF</div>
@@ -390,7 +387,6 @@
     </div>
   </div>
 
-  <!-- モーダル: 採集ログ -->
   <div class="modal-overlay" id="logModal">
     <div class="modal-box">
       <h3 style="color:#2e7d32;">💎 採集ログを記録</h3>
@@ -411,7 +407,6 @@
     </div>
   </div>
 
-  <!-- モーダル: マイコレクション図鑑 -->
   <div class="modal-overlay" id="galleryModal">
     <div class="modal-box">
       <h3 style="color:#e65100;">📖 マイコレクション図鑑</h3>
@@ -422,7 +417,6 @@
     </div>
   </div>
 
-  <!-- モーダル: 鑑定 -->
   <div class="modal-overlay" id="diagModal">
     <div class="modal-box">
       <h3 style="color:#6a1b9a;">🔍 拾った石の簡易チェッカー</h3>
@@ -459,7 +453,6 @@
     </div>
   </div>
 
-  <!-- モーダル: データ管理 -->
   <div class="modal-overlay" id="dataModal">
     <div class="modal-box">
       <h3 style="color:#1565c0;">💾 データ管理・写真一括配置</h3>
@@ -477,7 +470,6 @@
     </div>
   </div>
 
-  <!-- モーダル: トレカ -->
   <div class="modal-overlay" id="cardThemeModal">
     <div class="modal-box">
       <h3 style="color:#e65100;">🎴 トレカデザインを選択</h3>
@@ -493,7 +485,6 @@
     </div>
   </div>
 
-  <!-- モーダル: 雨雲防災 -->
   <div class="modal-overlay" id="radarModal">
     <div class="modal-box">
       <h3 style="color:#0097a7;">⛈️ 雨雲レーダー・河川防災</h3>
@@ -506,7 +497,6 @@
     </div>
   </div>
 
-  <!-- モーダル: マナー・出典 -->
   <div class="modal-overlay" id="infoModal">
     <div class="modal-box">
       <h3 style="color:#37474f;">ℹ️ 採集マナー・出典情報</h3>
@@ -604,67 +594,69 @@
       document.getElementById('opacityVal').innerText = Math.round(e.target.value * 100) + '%';
     });
 
-    // 3. Pro版限定：精密河川トレース・転石ホットゾーン
+    // 3. Pro版限定：全国転石ホットゾーン（面・ポリゴンエリア）
     const hotzonesData = [
       {
         id: 'kuji',
-        name: '久慈川・玉川水系（メノウ・玉髄転石帯）',
+        name: '久慈川・玉川 中流川原エリア',
         color: '#ff9800',
-        type: 'polyline',
         coords: [
-          [36.6853, 140.3542], [36.6781, 140.3635], [36.6720, 140.3690],
-          [36.6635, 140.3752], [36.6540, 140.3845], [36.6455, 140.3951],
-          [36.6380, 140.4042], [36.6291, 140.4135], [36.6210, 140.4221],
-          [36.6135, 140.4320], [36.6021, 140.4485], [36.5912, 140.4610]
+          [36.688, 140.345], [36.692, 140.365], [36.655, 140.405],
+          [36.610, 140.448], [36.585, 140.475], [36.578, 140.450],
+          [36.618, 140.412], [36.660, 140.365]
         ],
-        info: '<b>🟠 久慈川・玉川 転石帯</b><br>💎 <b>対象:</b> 瑪瑙（赤・黄縞）、玉髄、碧玉、珪化木<br>⛏️ <b>特徴:</b> 上流の新第三紀流紋岩層から流出したメノウが中流の広い砂利原に集積。水深10〜20cmの浅瀬で光を透して探そう！'
+        info: '<b>🟠 久慈川・玉川 メノウ転石エリア</b><br>💎 <b>対象:</b> 瑪瑙（赤・黄縞）、玉髄、碧玉、珪化木<br>⛏️ <b>探索のコツ:</b> 上流の流紋岩層から供給されたメノウが集まる広い砂利原。水深10〜20cmの浅瀬で濡れた状態で光を透す石を探そう！'
       },
       {
         id: 'abe',
-        name: '安倍川・梅ヶ島水系（砂金・含金石英脈）',
+        name: '安倍川 梅ヶ島〜中流砂金エリア',
         color: '#fbc02d',
-        type: 'polyline',
         coords: [
-          [35.2952, 138.3341], [35.2785, 138.3355], [35.2590, 138.3382],
-          [35.2381, 138.3345], [35.2155, 138.3280], [35.1950, 138.3210],
-          [35.1762, 138.3295], [35.1580, 138.3412], [35.1385, 138.3510],
-          [35.1150, 138.3615], [35.0850, 138.3721]
+          [35.310, 138.320], [35.315, 138.350], [35.240, 138.355],
+          [35.150, 138.365], [35.080, 138.385], [35.075, 138.360],
+          [35.160, 138.330], [35.250, 138.320]
         ],
-        info: '<b>🟡 安倍川 金山水系</b><br>💎 <b>対象:</b> 砂金、含金石英脈（銀黒）、黄鉄鉱<br>⛏️ <b>特徴:</b> 梅ヶ島金山由来。蛇行部の内側砂州や、岩盤（カッチャ）の隙間に溜まった重砂をパンニング！'
+        info: '<b>🟡 安倍川 砂金・金鉱石エリア</b><br>💎 <b>対象:</b> 砂金、含金石英脈（銀黒）、黄鉄鉱<br>⛏️ <b>探索のコツ:</b> 金山水系由来。川の蛇行内側の砂州や、岩盤（カッチャ）の隙間に溜まった重い黒砂をパンニング！'
       },
       {
         id: 'itoigawa',
-        name: '親不知〜宮崎ヒスイ海岸（漂着ワンド）',
+        name: '糸魚川〜宮崎 ヒスイ海岸漂着エリア',
         color: '#4caf50',
-        type: 'polyline',
         coords: [
-          [37.0425, 137.8610], [37.0380, 137.8350], [37.0250, 137.7850],
-          [37.0085, 137.7320], [36.9950, 137.6750], [36.9830, 137.6250],
-          [36.9760, 137.5850], [36.9730, 137.5450]
+          [37.050, 137.865], [37.035, 137.865], [36.965, 137.545],
+          [36.985, 137.535], [37.015, 137.675], [37.045, 137.800]
         ],
-        info: '<b>🟢 糸魚川〜宮崎 ヒスイ海岸帯</b><br>💎 <b>対象:</b> ヒスイ（本翡翠）、ネフライト、ロディン岩<br>⛏️ <b>特徴:</b> 姫川・青海川から沿岸流で運ばれる漂着エリア。波打ち際でずっしり重く角ばった石を狙おう。（※川の上流保護地区は採取禁止）'
+        info: '<b>🟢 糸魚川〜宮崎 ヒスイ海岸エリア</b><br>💎 <b>対象:</b> ヒスイ（本翡翠）、ネフライト、ロディン岩<br>⛏️ <b>探索のコツ:</b> 姫川・青海川から流出し沿岸流で打ち上げられる漂着ゾーン。波打ち際でずっしり重く、角ばって油光沢のある白〜緑の石を探そう。（※川の上流保護地区は採取禁止）'
       },
       {
         id: 'futagami',
-        name: '二上山・初田川〜原坂川沢筋（サファイア・柘榴石）',
+        name: '二上山麓 サファイア・柘榴石エリア',
         color: '#ab47bc',
-        type: 'polyline',
         coords: [
-          [34.5265, 135.6620], [34.5240, 135.6665], [34.5215, 135.6710],
-          [34.5185, 135.6762], [34.5150, 135.6815], [34.5110, 135.6880]
+          [34.535, 135.655], [34.538, 135.685], [34.505, 135.695],
+          [34.502, 135.665]
         ],
-        info: '<b>🟣 二上山 サファイア沢筋</b><br>💎 <b>対象:</b> 青色サファイア（微小コランダム）、ガーネット<br>⛏️ <b>特徴:</b> サヌカイト質安山岩が風化した川砂。目の細かいふるいとパンニング皿で重砂を選別！'
+        info: '<b>🟣 二上山麓 サファイア探索エリア</b><br>💎 <b>対象:</b> 青色サファイア（微小コランダム）、ガーネット<br>⛏️ <b>探索のコツ:</b> サヌカイト質安山岩が風化した川砂。沢の砂利だまりをすくい、ふるいとパンニング皿で重砂を選別！'
       },
       {
         id: 'sado',
-        name: '佐渡・西三川〜羽茂水系（赤玉石・砂金）',
+        name: '佐渡 西三川〜羽茂 赤玉石・砂金エリア',
         color: '#e53935',
-        type: 'polyline',
         coords: [
-          [37.9310, 138.2910], [37.9150, 138.3025], [37.8985, 138.3150],
-          [37.8820, 138.3280], [37.8650, 138.3410], [37.8420, 138.3580]
+          [37.940, 138.280], [37.945, 138.320], [37.860, 138.365],
+          [37.835, 138.360], [37.855, 138.320], [37.915, 138.285]
         ],
-        info: '<b>🔴 佐渡・西三川 転石帯</b><br>💎 <b>対象:</b> 佐渡赤玉石（ジャスパー）、砂金<br>⛏️ <b>特徴:</b> 鮮やかな真紅の銘石転石と、歴史ある西三川砂金水系の堆積エリア。'
+        info: '<b>🔴 佐渡・西三川 銘石・砂金エリア</b><br>💎 <b>対象:</b> 佐渡赤玉石（ジャスパー）、砂金<br>⛏️ <b>探索のコツ:</b> 鮮やかな真紅の銘石転石と、歴史ある西三川砂金水系の堆積エリア。'
+      },
+      {
+        id: 'nakatsugawa',
+        name: '中津川・苗木 ペグマタイト・トパーズエリア',
+        color: '#8e24aa',
+        coords: [
+          [35.545, 137.450], [35.550, 137.520], [35.480, 137.530],
+          [35.475, 137.460]
+        ],
+        info: '<b>💎 岐阜・中津川 苗木エリア</b><br>💎 <b>対象:</b> トパーズ（黄玉）、煙水晶、アクアマリン、緑柱石<br>⛏️ <b>探索のコツ:</b> 日本三大ペグマタイト地帯。花崗岩が風化した川砂や沢筋の砂利の中から透明な結晶粒を探そう！'
       }
     ];
 
@@ -674,29 +666,17 @@
     function renderHotzones() {
       hotzonesLayer.clearLayers();
       hotzonesData.forEach(z => {
-        // 外側の半透明グロー帯（川幅をカバー）
-        const glowLine = L.polyline(z.coords, {
+        const poly = L.polygon(z.coords, {
           color: z.color,
-          weight: 16,
-          opacity: 0.35,
-          lineCap: 'round',
-          lineJoin: 'round'
-        }).addTo(hotzonesLayer);
-
-        // 中心流路ライン
-        const centerLine = L.polyline(z.coords, {
-          color: z.color,
-          weight: 4,
-          opacity: 0.9,
-          lineCap: 'round',
-          lineJoin: 'round'
+          fillColor: z.color,
+          fillOpacity: 0.38,
+          weight: 2.5,
+          dashArray: '4, 4'
         }).addTo(hotzonesLayer);
 
         const popupContent = `<div style="font-size:11.5px; line-height:1.45;">${z.info}</div>`;
-        glowLine.bindPopup(popupContent);
-        centerLine.bindPopup(popupContent);
-
-        hotzoneShapes[z.id] = centerLine;
+        poly.bindPopup(popupContent);
+        hotzoneShapes[z.id] = poly;
       });
     }
     renderHotzones();
@@ -707,11 +687,11 @@
       const btn = document.getElementById('hotzoneToggleBtn');
       if (hotzonesVisible) {
         map.addLayer(hotzonesLayer);
-        btn.innerText = '🔥 転石ゾーン: ON';
+        btn.innerText = '🔥 転石エリア: ON';
         btn.classList.add('pro-toggle');
       } else {
         map.removeLayer(hotzonesLayer);
-        btn.innerText = '🔥 転石ゾーン: OFF';
+        btn.innerText = '🔥 転石エリア: OFF';
         btn.classList.remove('pro-toggle');
       }
     }
@@ -720,7 +700,7 @@
       const z = hotzonesData.find(item => item.id === id);
       const shape = hotzoneShapes[id];
       if (z && shape) {
-        map.fitBounds(shape.getBounds(), { padding: [40, 40], maxZoom: 15 });
+        map.fitBounds(shape.getBounds(), { padding: [50, 50], maxZoom: 14 });
         shape.openPopup();
         document.getElementById('guideContent').innerHTML = z.info;
       }
@@ -774,7 +754,8 @@
       jasper: { name: '🔴 碧玉・赤石', targetGeo: '🍊 流紋岩 / 🍇 チャート', tips: '不透明で超硬い鮮やかな赤・緑の石。' },
       wood: { name: '🪵 珪化木', targetGeo: '💧 堆積岩層', tips: '年輪や木肌が残り、叩くと金属音がする硬い化石。' },
       gold: { name: '🪙 砂金・金鉱石', targetGeo: '🟡 熱水鉱床・金山水系', tips: '比重19.3の圧倒的重さ。蛇行の内側やポットホールの最深部を狙う。' },
-      sapphire: { name: '💎 サファイア・柘榴石', targetGeo: '🟣 火山岩・ペグマタイト風化帯', tips: '比重4の硬質結晶。砂利だまりをパンニングして青・赤の粒を抽出。' }
+      sapphire: { name: '💎 サファイア・柘榴石', targetGeo: '🟣 火山岩・ペグマタイト風化帯', tips: '比重4の硬質結晶。砂利だまりをパンニングして青・赤の粒を抽出。' },
+      topaz: { name: '✨ トパーズ・黄玉', targetGeo: '💎 ペグマタイト鉱床（花崗岩）', tips: 'モース硬度8の超硬質結晶。川砂の中から柱状の透明・淡黄色結晶を探す。' }
     };
     function showStoneGuide(k) {
       const d = stoneDB[k];
