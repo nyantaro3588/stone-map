@@ -20,26 +20,26 @@
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; background: #000; }
     #map { width: 100%; height: 100%; }
 
-    /* 左上: 2段マルチ情報バッジ */
+    /* 左上: 2段マルチ情報バッジ（幅スリム化） */
     .info-widget {
       position: absolute;
-      top: max(20px, env(safe-area-inset-top, 20px));
-      left: 12px;
+      top: max(16px, env(safe-area-inset-top, 16px));
+      left: 10px;
       z-index: 1000;
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(8px);
-      padding: 5px 9px;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.22);
+      padding: 4px 7px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.22);
       display: flex;
       align-items: center;
-      gap: 8px;
-      max-width: 205px;
+      gap: 6px;
+      max-width: 175px;
     }
 
     .compass-container {
-      width: 26px;
-      height: 26px;
+      width: 24px;
+      height: 24px;
       position: relative;
       border-radius: 50%;
       border: 1.5px solid #455a64;
@@ -52,7 +52,7 @@
     }
     .compass-needle {
       width: 4px;
-      height: 22px;
+      height: 20px;
       position: absolute;
       transition: transform 0.15s ease-out;
       transform-origin: center center;
@@ -61,80 +61,82 @@
       width: 0; height: 0;
       border-left: 2px solid transparent;
       border-right: 2px solid transparent;
-      border-bottom: 11px solid #e53935;
+      border-bottom: 10px solid #e53935;
       margin: 0 auto;
     }
     .needle-s {
       width: 0; height: 0;
       border-left: 2px solid transparent;
       border-right: 2px solid transparent;
-      border-top: 11px solid #90a4ae;
+      border-top: 10px solid #90a4ae;
       margin: 0 auto;
     }
 
     .info-lines {
       display: flex;
       flex-direction: column;
-      gap: 2px;
-      font-size: 10px;
-      line-height: 1.25;
+      gap: 1px;
+      font-size: 9.5px;
+      line-height: 1.2;
       font-weight: bold;
       color: #333;
       white-space: nowrap;
     }
-    .info-line-top { display: flex; align-items: center; gap: 4px; }
-    .info-line-bottom { display: flex; align-items: center; gap: 4px; font-size: 9.5px; color: #555; }
+    .info-line-top { display: flex; align-items: center; gap: 3px; }
+    .info-line-bottom { display: flex; align-items: center; gap: 3px; font-size: 9px; color: #555; }
 
-    /* 左側: Pro穴場・予想フローティングボタン（左手親指エリア） */
+    /* 左下: Pro穴場・予想ボタン（左手親指エリア） */
     .left-pro-fab {
       position: absolute;
-      left: 14px;
-      bottom: 60px;
+      left: 12px;
+      bottom: 58px;
       z-index: 1000;
       background: linear-gradient(135deg, #ff8f00, #d84315);
       color: #ffffff;
       border: 2px solid #ffd54f;
       border-radius: 24px;
-      padding: 9px 14px;
+      padding: 9px 13px;
       font-size: 12px;
       font-weight: 900;
       box-shadow: 0 4px 14px rgba(216, 67, 21, 0.45);
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
     }
 
-    /* 右上ツールバー */
+    /* 右上ツールバー（コンパクト化） */
     .top-right-bar {
       position: absolute;
-      top: max(20px, env(safe-area-inset-top, 20px));
-      right: 12px;
+      top: max(16px, env(safe-area-inset-top, 16px));
+      right: 10px;
       z-index: 1000;
       display: flex;
-      gap: 5px;
+      gap: 4px;
     }
     .action-fab {
       background: #ffffff;
       color: #333;
       border: none;
-      border-radius: 20px;
-      padding: 6px 9px;
-      font-size: 11px;
+      border-radius: 18px;
+      padding: 5px 8px;
+      font-size: 10.5px;
       font-weight: bold;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 3px;
+      white-space: nowrap;
     }
     .pro-badge {
       background: linear-gradient(135deg, #ffd700, #ff8f00);
       color: #000;
-      padding: 2px 6px;
-      border-radius: 8px;
-      font-size: 9px;
+      padding: 1px 4px;
+      border-radius: 6px;
+      font-size: 8.5px;
       font-weight: 900;
+      letter-spacing: -0.5px;
     }
 
     /* 右下 GPSボタン */
@@ -154,7 +156,7 @@
       cursor: pointer;
     }
 
-    /* 下部ボトムシート（基本図鑑） */
+    /* 下部ボトムシート */
     .bottom-sheet {
       position: absolute;
       bottom: 0;
@@ -273,7 +275,6 @@
     .menu-item.active { background: #ffebee; border-color: #e53935; color: #c62828; }
     .menu-item.pro-toggle { background: #fff8e1; border-color: #ffd54f; }
 
-    /* Pro穴場リスト用スタイル */
     .pro-spot-card {
       padding: 8px 10px;
       margin-bottom: 6px;
@@ -323,13 +324,13 @@
     <div class="info-lines">
       <div class="info-line-top">
         <span id="headingText" style="color:#d84315;">北 (0°)</span>
-        <span style="color:#ccc;">|</span>
+        <span style="color:#ddd;">|</span>
         <span id="zoomText" style="color:#455a64;">Lv.10</span>
       </div>
       <div class="info-line-bottom">
         <span id="sunTimeText">🌇 18:22</span>
-        <span style="color:#ccc;">|</span>
-        <span id="tideText" style="color:#0277bd;">🌊 大潮 (15.2)</span>
+        <span style="color:#ddd;">|</span>
+        <span id="tideText" style="color:#0277bd;">🌊 大潮</span>
       </div>
     </div>
   </div>
@@ -339,7 +340,7 @@
     🔥 穴場・予想 (16)
   </button>
 
-  <!-- 右上: 全画面 ＆ 設定メニュー -->
+  <!-- 右上: 全画面 ＆ 設定メニュー（コンパクト） -->
   <div class="top-right-bar">
     <button class="action-fab" onclick="toggleFullScreen()">⛶ 全画面</button>
     <button class="action-fab" onclick="openModal('toolsModal')">
@@ -399,7 +400,7 @@
     </div>
   </div>
 
-  <!-- モーダル: Pro穴場＆地質予想メニュー（左ボタンから開く） -->
+  <!-- モーダル: Pro穴場＆地質予想メニュー -->
   <div class="modal-overlay" id="proSpotsModal">
     <div class="modal-box">
       <h3 style="color:#d84315; display:flex; justify-content:space-between; align-items:center;">
@@ -412,10 +413,7 @@
         <button class="tab-btn" id="modalTabPredict" onclick="switchSpotModalTab('predict')">🎯 地質推論予想 (6)</button>
       </div>
 
-      <!-- モーダル内: 有名産地リスト -->
       <div id="modalViewHot"></div>
-
-      <!-- モーダル内: 地質推論予想リスト -->
       <div id="modalViewPredict" style="display:none;"></div>
 
       <div class="btn-row" style="margin-top:10px;">
@@ -869,7 +867,6 @@
     }
     renderHotzones();
 
-    // モーダル内のProリスト構築
     function buildProSpotList() {
       const hotContainer = document.getElementById('modalViewHot');
       const predContainer = document.getElementById('modalViewPredict');
@@ -929,7 +926,7 @@
       }
     }
 
-    // 4. ボトムシート（基本図鑑）
+    // 4. ボトムシート
     function toggleBottomSheet() {
       const sheet = document.getElementById('bottomSheet');
       const arrow = document.getElementById('sheetArrow');
@@ -1128,7 +1125,7 @@
       let tideName = '中潮';
       if ((moonAge >= 29 || moonAge <= 2) || (moonAge >= 14 && moonAge <= 17)) tideName = '大潮';
       else if ((moonAge >= 7 && moonAge <= 9) || (moonAge >= 22 && moonAge <= 24)) tideName = '小潮';
-      document.getElementById('tideText').innerText = `🌊 ${tideName} (${moonAge})`;
+      document.getElementById('tideText').innerText = `🌊 ${tideName}`;
     }
     updateSunAndTide(36.7, 138.5);
 
