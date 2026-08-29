@@ -20,27 +20,27 @@
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; background: #000; }
     #map { width: 100%; height: 100%; }
 
-    /* 左上: 2段マルチ情報バッジ */
+    /* 左上: 2段マルチ情報バッジ（コンパクト化） */
     .info-widget {
       position: absolute;
-      top: max(16px, env(safe-area-inset-top, 16px));
-      left: 10px;
+      top: max(12px, env(safe-area-inset-top, 12px));
+      left: 8px;
       z-index: 1000;
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(8px);
-      padding: 4px 7px;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.22);
+      padding: 3px 6px;
+      border-radius: 9px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       display: flex;
       align-items: center;
-      gap: 6px;
-      max-width: 190px;
+      gap: 5px;
+      max-width: 165px;
       cursor: pointer;
     }
 
     .compass-container {
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 22px;
       position: relative;
       border-radius: 50%;
       border: 1.5px solid #455a64;
@@ -53,7 +53,7 @@
     }
     .compass-needle {
       width: 4px;
-      height: 20px;
+      height: 18px;
       position: absolute;
       transition: transform 0.15s ease-out;
       transform-origin: center center;
@@ -62,14 +62,14 @@
       width: 0; height: 0;
       border-left: 2px solid transparent;
       border-right: 2px solid transparent;
-      border-bottom: 10px solid #e53935;
+      border-bottom: 9px solid #e53935;
       margin: 0 auto;
     }
     .needle-s {
       width: 0; height: 0;
       border-left: 2px solid transparent;
       border-right: 2px solid transparent;
-      border-top: 10px solid #90a4ae;
+      border-top: 9px solid #90a4ae;
       margin: 0 auto;
     }
 
@@ -77,40 +77,42 @@
       display: flex;
       flex-direction: column;
       gap: 1px;
-      font-size: 9.5px;
+      font-size: 9px;
       line-height: 1.2;
       font-weight: bold;
       color: #333;
       white-space: nowrap;
+      overflow: hidden;
     }
     .info-line-top { display: flex; align-items: center; gap: 3px; }
-    .info-line-bottom { display: flex; align-items: center; gap: 3px; font-size: 9px; color: #555; }
+    .info-line-bottom { display: flex; align-items: center; gap: 3px; font-size: 8.5px; color: #555; }
 
     /* 左下: Pro穴場・予想ボタン（左手親指エリア） */
     .left-pro-fab {
       position: absolute;
       left: 12px;
-      bottom: 58px;
+      bottom: 56px;
       z-index: 1000;
       background: linear-gradient(135deg, #ff8f00, #d84315);
       color: #ffffff;
       border: 2px solid #ffd54f;
       border-radius: 24px;
-      padding: 9px 13px;
-      font-size: 12px;
+      padding: 8px 12px;
+      font-size: 11.5px;
       font-weight: 900;
       box-shadow: 0 4px 14px rgba(216, 67, 21, 0.45);
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 4px;
+      transition: opacity 0.25s, transform 0.25s;
     }
 
-    /* 右上ツールバー（コンパクト化） */
+    /* 右上ツールバー（超スリム化） */
     .top-right-bar {
       position: absolute;
-      top: max(16px, env(safe-area-inset-top, 16px));
-      right: 10px;
+      top: max(12px, env(safe-area-inset-top, 12px));
+      right: 8px;
       z-index: 1000;
       display: flex;
       gap: 4px;
@@ -119,42 +121,50 @@
       background: #ffffff;
       color: #333;
       border: none;
-      border-radius: 18px;
-      padding: 5px 8px;
-      font-size: 10.5px;
+      border-radius: 16px;
+      padding: 4px 7px;
+      font-size: 10px;
       font-weight: bold;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.18);
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 3px;
+      gap: 2px;
       white-space: nowrap;
     }
     .pro-badge {
       background: linear-gradient(135deg, #ffd700, #ff8f00);
       color: #000;
       padding: 1px 4px;
-      border-radius: 6px;
-      font-size: 8.5px;
+      border-radius: 5px;
+      font-size: 8px;
       font-weight: 900;
-      letter-spacing: -0.5px;
     }
 
     /* 右下 GPSボタン */
     .gps-btn {
       position: absolute;
-      bottom: 54px;
-      right: 14px;
+      bottom: 52px;
+      right: 12px;
       z-index: 1000;
       background: #ff5722;
       color: white;
       border: none;
       border-radius: 50%;
-      width: 48px;
-      height: 48px;
-      font-size: 20px;
+      width: 46px;
+      height: 46px;
+      font-size: 19px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
       cursor: pointer;
+      transition: opacity 0.25s, transform 0.25s;
+    }
+
+    /* ボトムシート展開時に浮遊ボタンを非表示化 */
+    body.sheet-opened .left-pro-fab,
+    body.sheet-opened .gps-btn {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.85);
     }
 
     /* 下部ボトムシート */
@@ -163,19 +173,19 @@
       bottom: 0;
       left: 0;
       right: 0;
-      z-index: 999;
+      z-index: 1005;
       background: rgba(255, 255, 255, 0.98);
       backdrop-filter: blur(10px);
       border-top-left-radius: 16px;
       border-top-right-radius: 16px;
-      box-shadow: 0 -4px 16px rgba(0,0,0,0.15);
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.18);
       transition: max-height 0.3s ease;
-      max-height: 42px;
+      max-height: 40px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
     }
-    .bottom-sheet.open { max-height: 50vh; }
+    .bottom-sheet.open { max-height: 52vh; }
     .sheet-header {
       padding: 10px 16px;
       display: flex;
@@ -341,7 +351,7 @@
 
   <div id="map"></div>
 
-  <!-- 左上: 2段マルチ情報ウィジェット（タップで潮汐詳細） -->
+  <!-- 左上: 2段マルチ情報ウィジェット -->
   <div class="info-widget" onclick="openModal('tideModal')">
     <div class="compass-container" onclick="event.stopPropagation(); requestOrientationPermission();" title="コンパス">
       <div id="compassNeedle" class="compass-needle">
@@ -358,28 +368,28 @@
       <div class="info-line-bottom">
         <span id="sunTimeText">🌇 18:22</span>
         <span style="color:#ddd;">|</span>
-        <span id="tideText" style="color:#0277bd;">🌊 干潮まで 2h</span>
+        <span id="tideText" style="color:#0277bd;">🌊 潮汐</span>
       </div>
     </div>
   </div>
 
   <!-- 左下: Pro穴場・予想ボタン（左手親指用） -->
-  <button class="left-pro-fab" onclick="openModal('proSpotsModal')">
+  <button id="leftProFab" class="left-pro-fab" onclick="openModal('proSpotsModal')">
     🔥 穴場・予想 (100)
   </button>
 
-  <!-- 右上: 全画面 ＆ 設定メニュー（コンパクト） -->
+  <!-- 右上: 全画面 ＆ 設定メニュー（超コンパクト） -->
   <div class="top-right-bar">
     <button class="action-fab" onclick="toggleFullScreen()">⛶ 全画面</button>
     <button class="action-fab" onclick="openModal('toolsModal')">
-      ⚙️ 設定 <span class="pro-badge">PRO</span>
+      ⚙️ <span class="pro-badge">PRO</span>
     </button>
   </div>
 
   <!-- 右下: GPSボタン -->
   <button id="gpsBtn" class="gps-btn" title="現在地を表示">📍</button>
 
-  <!-- 下部: 引き出し式 お宝早見表（地質・石・UV蛍光・記号） -->
+  <!-- 下部: 引き出し式 お宝早見表（基本図鑑） -->
   <div class="bottom-sheet" id="bottomSheet">
     <div class="sheet-header" onclick="toggleBottomSheet()">
       <span id="sheetHeaderTitle">⛏️ お宝早見表（地質＆石＆UV蛍光）</span>
@@ -450,9 +460,7 @@
   <div class="modal-overlay" id="tideModal">
     <div class="modal-box">
       <h3 style="color:#0277bd;">🌊 潮汐・引き潮ゴールデンタイム</h3>
-      <div id="tideDetailContent" style="background:#e1f5fe; padding:10px; border-radius:8px; font-size:11.5px; line-height:1.5; color:#01579b; margin-bottom:8px;">
-        <!-- JSで動的生成 -->
-      </div>
+      <div id="tideDetailContent" style="background:#e1f5fe; padding:10px; border-radius:8px; font-size:11.5px; line-height:1.5; color:#01579b; margin-bottom:8px;"></div>
       <div style="background:#f5f5f5; padding:8px; border-radius:6px; font-size:10px; color:#555; line-height:1.4;">
         <b>💡 海岸石拾いのコツ</b><br>
         干潮の前後2時間は、普段海中に沈んでいる波打ち際の砂利原が最も広く露出する**「最大の収穫チャンス（ゴールデンタイム）」**です！
@@ -471,7 +479,6 @@
         <span class="pro-badge">PRO</span>
       </h3>
 
-      <!-- 鉱物別フィルタータブ -->
       <div class="spot-category-tabs">
         <button class="spot-cat-btn active" onclick="filterProSpots('all', this)">🌐 すべて (100)</button>
         <button class="spot-cat-btn" onclick="filterProSpots('gold', this)">🪙 砂金・金鉱 (25)</button>
@@ -482,7 +489,6 @@
         <button class="spot-cat-btn" onclick="filterProSpots('predict', this)">🎯 予想のみ (50)</button>
       </div>
 
-      <!-- スポット一覧コンテナ -->
       <div id="proSpotListContainer"></div>
 
       <div class="btn-row" style="margin-top:10px;">
@@ -963,12 +969,13 @@
       }
     }
 
-    // 4. ボトムシート
+    // 4. ボトムシート（開閉時に浮遊ボタンを自動で隠す）
     function toggleBottomSheet() {
       const sheet = document.getElementById('bottomSheet');
       const arrow = document.getElementById('sheetArrow');
       const isOpen = sheet.classList.toggle('open');
       arrow.innerText = isOpen ? '▼' : '▲';
+      document.body.classList.toggle('sheet-opened', isOpen);
     }
 
     function switchGuideTab(tab) {
@@ -1181,13 +1188,11 @@
       if ((moonAge >= 29 || moonAge <= 2) || (moonAge >= 14 && moonAge <= 17)) tideName = '大潮';
       else if ((moonAge >= 7 && moonAge <= 9) || (moonAge >= 22 && moonAge <= 24)) tideName = '小潮';
 
-      // 概算干潮時刻（1日2回: 月南中時+6時間など）
       const curHour = now.getHours() + now.getMinutes() / 60;
       const tideOffset = (moonAge * 0.8) % 12;
       const lowTide1 = (tideOffset + 6) % 24;
       const lowTide2 = (lowTide1 + 12.4) % 24;
 
-      // 次の干潮までの時間
       let nextLow = lowTide1;
       if (curHour > lowTide1) nextLow = (curHour < lowTide2) ? lowTide2 : (lowTide1 + 24);
       const diffHour = nextLow - curHour;
@@ -1196,7 +1201,8 @@
       const diffH = Math.floor(diffHour);
       const diffM = Math.floor((diffHour % 1) * 60);
 
-      const tideLabel = isGolden ? '🌊 黄金引き潮中！' : `🌊 干潮まで${diffH}h${diffM}m`;
+      // 上部バーの文字は短くスマートに表示
+      const tideLabel = isGolden ? '🌊 引き潮中！' : `🌊 干潮:${diffH}h後`;
       document.getElementById('tideText').innerText = tideLabel;
 
       const formatTime = (hDec) => {
