@@ -34,7 +34,8 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      max-width: 175px;
+      max-width: 190px;
+      cursor: pointer;
     }
 
     .compass-container {
@@ -174,7 +175,7 @@
       display: flex;
       flex-direction: column;
     }
-    .bottom-sheet.open { max-height: 48vh; }
+    .bottom-sheet.open { max-height: 50vh; }
     .sheet-header {
       padding: 10px 16px;
       display: flex;
@@ -340,9 +341,9 @@
 
   <div id="map"></div>
 
-  <!-- 左上: 2段マルチ情報ウィジェット -->
-  <div class="info-widget">
-    <div class="compass-container" onclick="requestOrientationPermission()" title="コンパス">
+  <!-- 左上: 2段マルチ情報ウィジェット（タップで潮汐詳細） -->
+  <div class="info-widget" onclick="openModal('tideModal')">
+    <div class="compass-container" onclick="event.stopPropagation(); requestOrientationPermission();" title="コンパス">
       <div id="compassNeedle" class="compass-needle">
         <div class="needle-n"></div>
         <div class="needle-s"></div>
@@ -357,7 +358,7 @@
       <div class="info-line-bottom">
         <span id="sunTimeText">🌇 18:22</span>
         <span style="color:#ddd;">|</span>
-        <span id="tideText" style="color:#0277bd;">🌊 大潮</span>
+        <span id="tideText" style="color:#0277bd;">🌊 干潮まで 2h</span>
       </div>
     </div>
   </div>
@@ -378,19 +379,21 @@
   <!-- 右下: GPSボタン -->
   <button id="gpsBtn" class="gps-btn" title="現在地を表示">📍</button>
 
-  <!-- 下部: 引き出し式 お宝早見表（基本図鑑） -->
+  <!-- 下部: 引き出し式 お宝早見表（地質・石・UV蛍光・記号） -->
   <div class="bottom-sheet" id="bottomSheet">
     <div class="sheet-header" onclick="toggleBottomSheet()">
-      <span id="sheetHeaderTitle">⛏️ お宝早見表（地質＆石逆引き）</span>
+      <span id="sheetHeaderTitle">⛏️ お宝早見表（地質＆石＆UV蛍光）</span>
       <span id="sheetArrow">▲</span>
     </div>
     <div class="sheet-content">
       <div class="guide-tabs">
         <button class="tab-btn active" id="tabGeo" onclick="switchGuideTab('geo')">🗺️ 地質の色</button>
-        <button class="tab-btn" id="tabStone" onclick="switchGuideTab('stone')">💎 石から逆引き</button>
+        <button class="tab-btn" id="tabStone" onclick="switchGuideTab('stone')">💎 石逆引き</button>
+        <button class="tab-btn" id="tabUV" onclick="switchGuideTab('uv')">🔦 UV蛍光鉱物</button>
         <button class="tab-btn" id="tabCode" onclick="switchGuideTab('code')">🔤 地質記号</button>
       </div>
 
+      <!-- 地質の色 -->
       <div id="viewGeo">
         <div class="color-chips">
           <div class="chip" style="background:#ffcdd2;" onclick="showGuide('granite')">🌸 花崗岩（水晶/長石）</div>
@@ -402,6 +405,7 @@
         </div>
       </div>
 
+      <!-- 石逆引き -->
       <div id="viewStone" style="display:none;">
         <div class="color-chips">
           <div class="chip" style="background:#fff3e0;" onclick="showStoneGuide('agate')">💎 メノウ・玉髄</div>
@@ -415,6 +419,21 @@
         </div>
       </div>
 
+      <!-- UV蛍光鉱物図鑑 -->
+      <div id="viewUV" style="display:none;">
+        <div style="font-size:10px; color:#6a1b9a; font-weight:bold; margin-bottom:4px;">🔦 365nmブラックライトで発光する神秘のお宝！</div>
+        <div class="color-chips">
+          <div class="chip" style="background:#e1bee7;" onclick="showUVGuide('fluorite')">💜 フローライト（強蛍光青紫）</div>
+          <div class="chip" style="background:#ffcdd2;" onclick="showUVGuide('calcite')">❤️ 方解石（蛍光ピンク/赤）</div>
+          <div class="chip" style="background:#ffe0b2;" onclick="showUVGuide('yooperlite')">🧡 ユーパーライト（蛍光オレンジ）</div>
+          <div class="chip" style="background:#ffebee;" onclick="showUVGuide('ruby')">💖 ルビー/サファイア（蛍光真紅）</div>
+          <div class="chip" style="background:#e8f5e9;" onclick="showUVGuide('uran_opal')">💚 ハイアライト/玉髄（蛍光グリーン）</div>
+          <div class="chip" style="background:#e0f7fa;" onclick="showUVGuide('petro_quartz')">💙 石油入り水晶（青白蛍光）</div>
+          <div class="chip" style="background:#fff9c4;" onclick="showUVGuide('scapolite')">💛 柱石（蛍光イエロー）</div>
+        </div>
+      </div>
+
+      <!-- 地質記号 -->
       <div id="viewCode" style="display:none; font-size:10px; line-height:1.4; color:#37474f; background:#f9f9f9; padding:6px; border-radius:6px; margin-bottom:4px;">
         <b>🔤 記号の見方（例: N1_vas = 新第三紀前期 火山岩）</b><br>
         ・<b>年代:</b> Q（第四紀）、N（新第三紀）、Pg（古第三紀）、K（白亜紀）、J（ジュラ紀）<br>
@@ -427,7 +446,24 @@
     </div>
   </div>
 
-  <!-- モーダル: Pro穴場＆地質予想メニュー（100選・鉱物別フィルター） -->
+  <!-- モーダル: 潮汐・干潮ゴールデンタイム詳細 -->
+  <div class="modal-overlay" id="tideModal">
+    <div class="modal-box">
+      <h3 style="color:#0277bd;">🌊 潮汐・引き潮ゴールデンタイム</h3>
+      <div id="tideDetailContent" style="background:#e1f5fe; padding:10px; border-radius:8px; font-size:11.5px; line-height:1.5; color:#01579b; margin-bottom:8px;">
+        <!-- JSで動的生成 -->
+      </div>
+      <div style="background:#f5f5f5; padding:8px; border-radius:6px; font-size:10px; color:#555; line-height:1.4;">
+        <b>💡 海岸石拾いのコツ</b><br>
+        干潮の前後2時間は、普段海中に沈んでいる波打ち際の砂利原が最も広く露出する**「最大の収穫チャンス（ゴールデンタイム）」**です！
+      </div>
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="btn-act" style="background:#0277bd;" onclick="closeModal('tideModal')">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- モーダル: Pro穴場＆地質予想メニュー（100選） -->
   <div class="modal-overlay" id="proSpotsModal">
     <div class="modal-box">
       <h3 style="color:#d84315; display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
@@ -474,6 +510,7 @@
 
       <div class="menu-grid">
         <div id="hotzoneToggleBtn" class="menu-item pro-toggle" onclick="toggleHotzones()">🔥 転石エリア: ON</div>
+        <div class="menu-item" onclick="openModal('tideModal')">🌊 潮汐タイマー</div>
         <div id="wakeLockBtn" class="menu-item" onclick="toggleWakeLock()">💡 スリープ防止: OFF</div>
         <div id="trackBtn" class="menu-item">🐾 軌跡記録: OFF</div>
         <div id="privacyBtn" class="menu-item" onclick="togglePrivacy()">🔒 共有保護: OFF</div>
@@ -710,7 +747,7 @@
       document.getElementById('opacityVal').innerText = Math.round(e.target.value * 100) + '%';
     });
 
-    // 3. 全国100大ホットスポットデータ（完全網羅）
+    // 3. 全国100大ホットスポットデータ
     const hotzonesData = [
       // === 🪙 砂金・金鉱石 (25選) ===
       { id: 'g01', category: 'gold', name: '北海道・歴舟川 砂金探査エリア', badge: '🪙 日本一の砂金河川', color: '#fbc02d', center: [42.485, 143.150], radius: 5000, desc: '大樹町周辺の広大な川原。大岩の下流側や草の根に溜まる砂利をパンニング。' },
@@ -937,10 +974,12 @@
     function switchGuideTab(tab) {
       document.getElementById('tabGeo').classList.toggle('active', tab === 'geo');
       document.getElementById('tabStone').classList.toggle('active', tab === 'stone');
+      document.getElementById('tabUV').classList.toggle('active', tab === 'uv');
       document.getElementById('tabCode').classList.toggle('active', tab === 'code');
 
       document.getElementById('viewGeo').style.display = (tab === 'geo') ? 'block' : 'none';
       document.getElementById('viewStone').style.display = (tab === 'stone') ? 'block' : 'none';
+      document.getElementById('viewUV').style.display = (tab === 'uv') ? 'block' : 'none';
       document.getElementById('viewCode').style.display = (tab === 'code') ? 'block' : 'none';
     }
 
@@ -970,6 +1009,21 @@
     function showStoneGuide(k) {
       const d = stoneDB[k];
       if (d) document.getElementById('guideContent').innerHTML = `<b>${d.name}</b><br>🎯 <b>狙う地質:</b> ${d.targetGeo}<br><span style="color:#455a64;">${d.tips}</span>`;
+    }
+
+    // UV蛍光鉱物ガイドDB
+    const uvDB = {
+      fluorite: { name: '💜 フローライト（蛍石）', color: '鮮烈な青紫〜紫色（長波UV）', tips: '紫外線で最も強く光る代表格。熱水鉱山跡の沢筋の転石にUVライトを当てると怪しく発光！' },
+      calcite: { name: '❤️ 方解石（カルサイト）', color: '鮮やかなピンク〜オレンジ〜赤色', tips: '微量マンガンを含む方解石が赤〜ピンクに強く発光。石灰岩地帯やスカルン鉱床の沢で発見多数。' },
+      yooperlite: { name: '🧡 ユーパーライト（蛍光方ソーダ石）', color: '燃えるようなオレンジ〜黄色', tips: '一見ただの灰色の石が、UV365nmを当てるとマグマのように光り輝く！海岸のナイトコーミングに最適。' },
+      ruby: { name: '💖 ルビー / コランダム', color: '鮮烈な真紅（クリムゾンレッド）', tips: 'クロムを含むコランダムは長波UVで真っ赤に発光。川砂のパンニング残渣にライトを照射！' },
+      uran_opal: { name: '💚 ハイアライト / 玉髄（蛍光オパール）', color: '強烈なネオングリーン（緑色）', tips: '微量ウラニルイオンを含む玉髄やオパール。福島宝坂や流紋岩地帯の気泡充填鉱物に注目。' },
+      petro_quartz: { name: '💙 石油入り水晶', color: '内包オイルが青白く発光', tips: '水晶内部の気泡に含まれる太古の石油（ペトロリアム）がUVライトで青白く輝く極上のお宝。' },
+      scapolite: { name: '💛 柱石（スキャポライト）', color: '明るい黄色〜オレンジ色', tips: '接触変成帯（スカルン）の結晶鉱物。黄色く発光する柱状結晶。' }
+    };
+    function showUVGuide(k) {
+      const d = uvDB[k];
+      if (d) document.getElementById('guideContent').innerHTML = `<b>${d.name}</b><br>🔦 <b>発光色:</b> <span style="color:#e91e63; font-weight:bold;">${d.color}</span><br><span style="color:#455a64;">${d.tips}</span>`;
     }
 
     // 5. コンパス
@@ -1098,7 +1152,7 @@
       } else { alert('非対応端末です'); }
     }
 
-    // 9. 日没・潮汐
+    // 9. 日没＆潮汐・干潮ゴールデンタイム計算
     function updateSunAndTide(lat, lng) {
       const now = new Date();
       const start = new Date(now.getFullYear(), 0, 0);
@@ -1120,12 +1174,47 @@
         document.getElementById('sunTimeText').innerText = `🌇 ${String(sH).padStart(2,'0')}:${String(sM).padStart(2,'0')}${remainStr}`;
       }
 
+      // 潮汐・干潮計算
       const baseDate = new Date(2000, 0, 6, 18, 14);
-      const moonAge = (((now - baseDate) / 86400000) % 29.530588853).toFixed(1);
+      const moonAge = (((now - baseDate) / 86400000) % 29.530588853);
       let tideName = '中潮';
       if ((moonAge >= 29 || moonAge <= 2) || (moonAge >= 14 && moonAge <= 17)) tideName = '大潮';
       else if ((moonAge >= 7 && moonAge <= 9) || (moonAge >= 22 && moonAge <= 24)) tideName = '小潮';
-      document.getElementById('tideText').innerText = `🌊 ${tideName}`;
+
+      // 概算干潮時刻（1日2回: 月南中時+6時間など）
+      const curHour = now.getHours() + now.getMinutes() / 60;
+      const tideOffset = (moonAge * 0.8) % 12;
+      const lowTide1 = (tideOffset + 6) % 24;
+      const lowTide2 = (lowTide1 + 12.4) % 24;
+
+      // 次の干潮までの時間
+      let nextLow = lowTide1;
+      if (curHour > lowTide1) nextLow = (curHour < lowTide2) ? lowTide2 : (lowTide1 + 24);
+      const diffHour = nextLow - curHour;
+      const isGolden = Math.abs(curHour - lowTide1) <= 2 || Math.abs(curHour - lowTide2) <= 2;
+
+      const diffH = Math.floor(diffHour);
+      const diffM = Math.floor((diffHour % 1) * 60);
+
+      const tideLabel = isGolden ? '🌊 黄金引き潮中！' : `🌊 干潮まで${diffH}h${diffM}m`;
+      document.getElementById('tideText').innerText = tideLabel;
+
+      const formatTime = (hDec) => {
+        const h = Math.floor((hDec + 24) % 24);
+        const m = Math.floor(((hDec + 24) % 1) * 60);
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+      };
+
+      document.getElementById('tideDetailContent').innerHTML = `
+        <b>🌊 潮回り: ${tideName} (月齢 ${moonAge.toFixed(1)})</b><br>
+        ・<b>予測干潮時刻:</b> ① ${formatTime(lowTide1)} / ② ${formatTime(lowTide2)}<br>
+        ・<b>👑 引き潮ゴールデンタイム:</b><br>
+         1回目: <b>${formatTime(lowTide1 - 2)} 〜 ${formatTime(lowTide1 + 2)}</b><br>
+         2回目: <b>${formatTime(lowTide2 - 2)} 〜 ${formatTime(lowTide2 + 2)}</b><br>
+        <span style="font-size:10.5px; color:${isGolden ? '#d84315' : '#555'}; font-weight:bold;">
+          ${isGolden ? '🔥 現在、引き潮ゴールデンタイムの真っ只中です！' : `⏳ 次の干潮まであと約 ${diffH}時間${diffM}分`}
+        </span>
+      `;
     }
     updateSunAndTide(36.7, 138.5);
 
