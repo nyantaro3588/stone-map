@@ -20,7 +20,7 @@
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; background: #000; }
     #map { width: 100%; height: 100%; }
 
-    /* 左上: 2段マルチ情報バッジ（コンパクト化） */
+    /* 左上: 2段マルチ情報バッジ */
     .info-widget {
       position: absolute;
       top: max(12px, env(safe-area-inset-top, 12px));
@@ -108,7 +108,7 @@
       transition: opacity 0.25s, transform 0.25s;
     }
 
-    /* 右上ツールバー（超スリム化） */
+    /* 右上ツールバー */
     .top-right-bar {
       position: absolute;
       top: max(12px, env(safe-area-inset-top, 12px));
@@ -378,7 +378,7 @@
     🔥 穴場・予想 (100)
   </button>
 
-  <!-- 右上: 全画面 ＆ 設定メニュー（超コンパクト） -->
+  <!-- 右上: 全画面 ＆ 設定メニュー -->
   <div class="top-right-bar">
     <button class="action-fab" onclick="toggleFullScreen()">⛶ 全画面</button>
     <button class="action-fab" onclick="openModal('toolsModal')">
@@ -389,7 +389,7 @@
   <!-- 右下: GPSボタン -->
   <button id="gpsBtn" class="gps-btn" title="現在地を表示">📍</button>
 
-  <!-- 下部: 引き出し式 お宝早見表（基本図鑑） -->
+  <!-- 下部: 引き出し式 お宝早見表 -->
   <div class="bottom-sheet" id="bottomSheet">
     <div class="sheet-header" onclick="toggleBottomSheet()">
       <span id="sheetHeaderTitle">⛏️ お宝早見表（地質＆石＆UV蛍光）</span>
@@ -456,37 +456,42 @@
     </div>
   </div>
 
-  <!-- モーダル: 潮汐・干潮ゴールデンタイム詳細 -->
+  <!-- モーダル: 潮汐・干潮ゴールデンタイム詳細（免責注記＆気象庁リンク付き） -->
   <div class="modal-overlay" id="tideModal">
     <div class="modal-box">
       <h3 style="color:#0277bd;">🌊 潮汐・引き潮ゴールデンタイム</h3>
       <div id="tideDetailContent" style="background:#e1f5fe; padding:10px; border-radius:8px; font-size:11.5px; line-height:1.5; color:#01579b; margin-bottom:8px;"></div>
-      <div style="background:#f5f5f5; padding:8px; border-radius:6px; font-size:10px; color:#555; line-height:1.4;">
-        <b>💡 海岸石拾いのコツ</b><br>
-        干潮の前後2時間は、普段海中に沈んでいる波打ち際の砂利原が最も広く露出する**「最大の収穫チャンス（ゴールデンタイム）」**です！
+      
+      <div style="background:#fff3e0; border-left: 3px solid #ff9800; padding:6px 8px; border-radius:4px; font-size:9.5px; color:#e65100; line-height:1.35; margin-bottom:8px;">
+        ⚠️ <b>精度に関する注記:</b><br>
+        本機能は月齢および経度補正に基づく天文学的理論値（簡易計算）です。局所的な湾の地形や気象条件により実潮位とは差が生じます。探索の際は必ず現地の気象庁潮位表をご確認ください。
       </div>
-      <div class="btn-row" style="margin-top:10px;">
-        <button class="btn-act" style="background:#0277bd;" onclick="closeModal('tideModal')">閉じる</button>
+
+      <a href="https://www.data.jma.go.jp/gmd/kaiyou/db/tide/suisan/" target="_blank" class="btn-act" style="display:block; background:#0288d1; text-decoration:none; margin-bottom:6px;">📡 気象庁 潮位表（全国実測データ）↗</a>
+
+      <div class="btn-row">
+        <button class="btn-act" style="background:#888;" onclick="closeModal('tideModal')">閉じる</button>
       </div>
     </div>
   </div>
 
-  <!-- モーダル: Pro穴場＆地質予想メニュー（100選） -->
+  <!-- モーダル: Pro穴場＆地質予想メニュー（100選・動的タブ生成） -->
   <div class="modal-overlay" id="proSpotsModal">
     <div class="modal-box">
       <h3 style="color:#d84315; display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-        <span>🔥 全国穴場＆地質予想 (100選)</span>
+        <span id="proModalHeaderTitle">🔥 全国穴場＆地質予想</span>
         <span class="pro-badge">PRO</span>
       </h3>
 
-      <div class="spot-category-tabs">
-        <button class="spot-cat-btn active" onclick="filterProSpots('all', this)">🌐 すべて (100)</button>
-        <button class="spot-cat-btn" onclick="filterProSpots('gold', this)">🪙 砂金・金鉱 (25)</button>
-        <button class="spot-cat-btn" onclick="filterProSpots('agate', this)">🟠 メノウ・碧玉 (25)</button>
-        <button class="spot-cat-btn" onclick="filterProSpots('jade', this)">🟢 ヒスイ・変成 (20)</button>
-        <button class="spot-cat-btn" onclick="filterProSpots('jewel', this)">💎 宝石・水晶 (20)</button>
-        <button class="spot-cat-btn" onclick="filterProSpots('fossil', this)">🐚 化石・珪化木 (10)</button>
-        <button class="spot-cat-btn" onclick="filterProSpots('predict', this)">🎯 予想のみ (50)</button>
+      <!-- 鉱物別フィルタータブ（JSで件数を動的反映） -->
+      <div id="spotCategoryTabs" class="spot-category-tabs">
+        <button class="spot-cat-btn active" data-cat="all" onclick="filterProSpots('all', this)">🌐 すべて</button>
+        <button class="spot-cat-btn" data-cat="gold" onclick="filterProSpots('gold', this)">🪙 砂金・金鉱</button>
+        <button class="spot-cat-btn" data-cat="agate" onclick="filterProSpots('agate', this)">🟠 メノウ・碧玉</button>
+        <button class="spot-cat-btn" data-cat="jade" onclick="filterProSpots('jade', this)">🟢 ヒスイ・変成</button>
+        <button class="spot-cat-btn" data-cat="jewel" onclick="filterProSpots('jewel', this)">💎 宝石・水晶</button>
+        <button class="spot-cat-btn" data-cat="fossil" onclick="filterProSpots('fossil', this)">🐚 化石・珪化木</button>
+        <button class="spot-cat-btn" data-cat="predict" onclick="filterProSpots('predict', this)">🎯 予想のみ</button>
       </div>
 
       <div id="proSpotListContainer"></div>
@@ -608,18 +613,28 @@
     </div>
   </div>
 
-  <!-- モーダル: データ管理 -->
+  <!-- モーダル: データ管理（無料版ログ移行対応） -->
   <div class="modal-overlay" id="dataModal">
     <div class="modal-box">
       <h3 style="color:#1565c0;">💾 データ管理・写真一括配置</h3>
+      
+      <!-- 無料版ログ引き継ぎボタン -->
+      <div style="background:#fff8e1; border:1px solid #ffd54f; padding:8px; border-radius:6px; margin-bottom:8px;">
+        <b>🔄 無料版のログを引き継ぐ</b>
+        <div style="font-size:9.5px; color:#666; margin-bottom:4px;">無料版で記録したログをワンタップでPro版にインポート！</div>
+        <button class="btn-act" style="background:#e65100; width:100%;" onclick="importFromFreeVersion()">📥 無料版からログを移行</button>
+      </div>
+
       <div style="background:#e3f2fd; padding:8px; border-radius:6px; margin-bottom:8px;">
         <b>📸 写真から一括ピン立て</b>
         <div style="font-size:10px; color:#555; margin-bottom:4px;">位置情報付き写真を選ぶだけで自動配置！</div>
         <input type="file" id="batchPhotoInput" accept="image/*" multiple onchange="batchImportPhotos(event)">
       </div>
+      
       <button class="btn-act" style="background:#1565c0; width:100%; margin-bottom:6px;" onclick="exportLogs()">📤 ログをJSON保存</button>
       <label><b>📥 バックアップを復元</b></label>
       <input type="file" id="importFile" accept=".json" onchange="importLogs(event)">
+      
       <div class="btn-row">
         <button class="btn-act" style="background:#888;" onclick="closeModal('dataModal')">閉じる</button>
       </div>
@@ -905,11 +920,42 @@
     }
     renderHotzones();
 
+    // 鉱物別タブの件数を実データから完全自動集計
+    function updateCategoryTabCounts() {
+      const counts = {
+        all: hotzonesData.length,
+        gold: hotzonesData.filter(z => z.category === 'gold').length,
+        agate: hotzonesData.filter(z => z.category === 'agate').length,
+        jade: hotzonesData.filter(z => z.category === 'jade').length,
+        jewel: hotzonesData.filter(z => z.category === 'jewel').length,
+        fossil: hotzonesData.filter(z => z.category === 'fossil').length,
+        predict: hotzonesData.filter(z => z.predict === true).length
+      };
+
+      document.getElementById('leftProFab').innerText = `🔥 穴場・予想 (${counts.all})`;
+      document.getElementById('proModalHeaderTitle').innerText = `🔥 全国穴場＆地質予想 (${counts.all}選)`;
+
+      const catLabels = {
+        all: `🌐 すべて (${counts.all})`,
+        gold: `🪙 砂金・金鉱 (${counts.gold})`,
+        agate: `🟠 メノウ・碧玉 (${counts.agate})`,
+        jade: `🟢 ヒスイ・変成 (${counts.jade})`,
+        jewel: `💎 宝石・水晶 (${counts.jewel})`,
+        fossil: `🐚 化石・珪化木 (${counts.fossil})`,
+        predict: `🎯 予想のみ (${counts.predict})`
+      };
+
+      document.querySelectorAll('#spotCategoryTabs .spot-cat-btn').forEach(btn => {
+        const cat = btn.getAttribute('data-cat');
+        if (catLabels[cat]) btn.innerText = catLabels[cat];
+      });
+    }
+
     // 鉱物別フィルター＆リスト生成
     let currentSpotFilter = 'all';
     function filterProSpots(cat, btnElem) {
       currentSpotFilter = cat;
-      document.querySelectorAll('.spot-cat-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#spotCategoryTabs .spot-cat-btn').forEach(b => b.classList.remove('active'));
       if (btnElem) btnElem.classList.add('active');
 
       const container = document.getElementById('proSpotListContainer');
@@ -943,6 +989,7 @@
         container.appendChild(card);
       });
     }
+    updateCategoryTabCounts();
     filterProSpots('all', null);
 
     let hotzonesVisible = true;
@@ -969,7 +1016,7 @@
       }
     }
 
-    // 4. ボトムシート（開閉時に浮遊ボタンを自動で隠す）
+    // 4. ボトムシート
     function toggleBottomSheet() {
       const sheet = document.getElementById('bottomSheet');
       const arrow = document.getElementById('sheetArrow');
@@ -1159,7 +1206,7 @@
       } else { alert('非対応端末です'); }
     }
 
-    // 9. 日没＆潮汐・干潮ゴールデンタイム計算
+    // 9. 日没＆潮汐・干潮ゴールデンタイム計算（経度補正適用）
     function updateSunAndTide(lat, lng) {
       const now = new Date();
       const start = new Date(now.getFullYear(), 0, 0);
@@ -1181,7 +1228,7 @@
         document.getElementById('sunTimeText').innerText = `🌇 ${String(sH).padStart(2,'0')}:${String(sM).padStart(2,'0')}${remainStr}`;
       }
 
-      // 潮汐・干潮計算
+      // 潮汐・干潮計算（東経135度を基準とした経度補正を加味）
       const baseDate = new Date(2000, 0, 6, 18, 14);
       const moonAge = (((now - baseDate) / 86400000) % 29.530588853);
       let tideName = '中潮';
@@ -1189,7 +1236,8 @@
       else if ((moonAge >= 7 && moonAge <= 9) || (moonAge >= 22 && moonAge <= 24)) tideName = '小潮';
 
       const curHour = now.getHours() + now.getMinutes() / 60;
-      const tideOffset = (moonAge * 0.8) % 12;
+      const lngOffset = (135.0 - lng) * 4 / 60; // 経度1度あたり約4分の時差補正
+      const tideOffset = ((moonAge * 0.84) + lngOffset + 24) % 12;
       const lowTide1 = (tideOffset + 6) % 24;
       const lowTide2 = (lowTide1 + 12.4) % 24;
 
@@ -1201,7 +1249,6 @@
       const diffH = Math.floor(diffHour);
       const diffM = Math.floor((diffHour % 1) * 60);
 
-      // 上部バーの文字は短くスマートに表示
       const tideLabel = isGolden ? '🌊 引き潮中！' : `🌊 干潮:${diffH}h後`;
       document.getElementById('tideText').innerText = tideLabel;
 
@@ -1269,7 +1316,7 @@
       }
     });
 
-    // 12. 採集ログ
+    // 12. 採集ログ＆無料版データ引き継ぎ
     const logLayer = L.layerGroup().addTo(map);
     let selectedLatLng = null;
     let currentCardIndex = null;
@@ -1293,6 +1340,39 @@
           </div>
         `);
       });
+    }
+
+    // 無料版ログの自動検知＆インポート
+    function checkFreeVersionLogs() {
+      const proLogs = localStorage.getItem('stone_logs_pro');
+      const freeLogs = localStorage.getItem('stone_logs');
+      if (!proLogs && freeLogs) {
+        try {
+          const parsed = JSON.parse(freeLogs);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            if (confirm(`【Pro版へようこそ！】\n無料版で作成した採集ログ（${parsed.length}件）が見つかりました。\nPro版にそのまま引き継ぎますか？`)) {
+              localStorage.setItem('stone_logs_pro', freeLogs);
+              loadLogs();
+              alert(`引き継ぎ完了！ ${parsed.length}件のログをPro版に移行しました。`);
+            }
+          }
+        } catch(e) {}
+      }
+    }
+
+    function importFromFreeVersion() {
+      const freeLogs = localStorage.getItem('stone_logs');
+      if (!freeLogs) return alert('無料版のログが見つかりませんでした。');
+      try {
+        const parsed = JSON.parse(freeLogs);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const curPro = JSON.parse(localStorage.getItem('stone_logs_pro') || '[]');
+          localStorage.setItem('stone_logs_pro', JSON.stringify([...curPro, ...parsed]));
+          loadLogs();
+          alert(`無料版から ${parsed.length} 件のログをPro版に追加しました！`);
+          closeModal('dataModal');
+        } else { alert('無料版にログがありませんでした。'); }
+      } catch(e) { alert('読み込みに失敗しました。'); }
     }
 
     function openCardThemeModal(idx) {
@@ -1465,6 +1545,7 @@
     };
 
     loadLogs();
+    checkFreeVersionLogs();
 
     // 13. 鑑定
     function runDiagnosis() {
