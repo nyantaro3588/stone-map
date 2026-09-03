@@ -456,7 +456,7 @@
     </div>
   </div>
 
-  <!-- モーダル: 潮汐・干潮ゴールデンタイム詳細（免責注記＆気象庁リンク付き） -->
+  <!-- モーダル: 潮汐・干潮ゴールデンタイム詳細 -->
   <div class="modal-overlay" id="tideModal">
     <div class="modal-box">
       <h3 style="color:#0277bd;">🌊 潮汐・引き潮ゴールデンタイム</h3>
@@ -475,7 +475,7 @@
     </div>
   </div>
 
-  <!-- モーダル: Pro穴場＆地質予想メニュー（100選・動的タブ生成） -->
+  <!-- モーダル: Pro穴場＆地質予想メニュー（100選） -->
   <div class="modal-overlay" id="proSpotsModal">
     <div class="modal-box">
       <h3 style="color:#d84315; display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
@@ -483,7 +483,6 @@
         <span class="pro-badge">PRO</span>
       </h3>
 
-      <!-- 鉱物別フィルタータブ（JSで件数を動的反映） -->
       <div id="spotCategoryTabs" class="spot-category-tabs">
         <button class="spot-cat-btn active" data-cat="all" onclick="filterProSpots('all', this)">🌐 すべて</button>
         <button class="spot-cat-btn" data-cat="gold" onclick="filterProSpots('gold', this)">🪙 砂金・金鉱</button>
@@ -613,12 +612,11 @@
     </div>
   </div>
 
-  <!-- モーダル: データ管理（無料版ログ移行対応） -->
+  <!-- モーダル: データ管理 -->
   <div class="modal-overlay" id="dataModal">
     <div class="modal-box">
       <h3 style="color:#1565c0;">💾 データ管理・写真一括配置</h3>
       
-      <!-- 無料版ログ引き継ぎボタン -->
       <div style="background:#fff8e1; border:1px solid #ffd54f; padding:8px; border-radius:6px; margin-bottom:8px;">
         <b>🔄 無料版のログを引き継ぐ</b>
         <div style="font-size:9.5px; color:#666; margin-bottom:4px;">無料版で記録したログをワンタップでPro版にインポート！</div>
@@ -882,12 +880,14 @@
     ];
 
     const hotzonesLayer = L.layerGroup().addTo(map);
-    const hotzoneCircles = {};
+    const hotzoneMarkers = {};
 
     function renderHotzones() {
       hotzonesLayer.clearLayers();
       hotzonesData.forEach(z => {
         const isPredict = z.predict === true;
+        
+        // 探索範囲サークル（タップ時にその地点に新規ピンを立てる）
         const circle = L.circle(z.center, {
           radius: z.radius,
           color: z.color,
@@ -897,6 +897,11 @@
           dashArray: isPredict ? '6, 6' : '4, 4'
         }).addTo(hotzonesLayer);
 
+        circle.on('click', (e) => {
+          handleMapClick(e.latlng, z);
+        });
+
+        // 中心目印マーカー（詳細解説ポップアップ）
         const marker = L.circleMarker(z.center, {
           radius: isPredict ? 7 : 6,
           color: '#ffffff',
@@ -905,17 +910,20 @@
           weight: 2
         }).addTo(hotzonesLayer);
 
-        const popupContent = `
-          <div style="font-size:11.5px; line-height:1.45;">
+        const naviUrl = `https://gbank.gsj.jp/seamless/v2/viewer/?lat=${z.center[0].toFixed(5)}&lng=${z.center[1].toFixed(5)}&z=14`;
+        marker.bindPopup(`
+          <div style="font-size:11.5px; line-height:1.45; min-width:180px;">
             <b style="color:${z.color};">${z.name}</b><br>
             💎 <b>${z.badge}</b><br>
-            <span style="color:#555;">${z.desc}</span>
+            <div style="color:#555; margin:4px 0;">${z.desc}</div>
+            <div class="btn-row" style="margin-top:6px;">
+              <button class="btn-act" style="background:#2e7d32;" onclick="selectedLatLng={lat:${z.center[0]},lng:${z.center[1]}}; openModal('logModal');">💎 採集ログ</button>
+              <a href="${naviUrl}" target="_blank" class="btn-act" style="background:#1565c0; text-decoration:none;">公式詳細 ↗</a>
+            </div>
           </div>
-        `;
-        circle.bindPopup(popupContent);
-        marker.bindPopup(popupContent);
+        `);
 
-        hotzoneCircles[z.id] = circle;
+        hotzoneMarkers[z.id] = { circle, marker, data: z };
       });
     }
     renderHotzones();
@@ -1008,11 +1016,10 @@
     }
 
     function focusZone(id) {
-      const z = hotzonesData.find(item => item.id === id);
-      const circle = hotzoneCircles[id];
-      if (z && circle) {
-        map.fitBounds(circle.getBounds(), { padding: [40, 40], maxZoom: 14 });
-        circle.openPopup();
+      const item = hotzoneMarkers[id];
+      if (item) {
+        map.fitBounds(item.circle.getBounds(), { padding: [40, 40], maxZoom: 14 });
+        item.marker.openPopup();
       }
     }
 
@@ -1469,10 +1476,10 @@
       openModal('galleryModal');
     }
 
-    // 地図クリック
+    // 地図クリック＆穴場サークルクリック共通ハンドラ（どこでもピンが立つ！）
     let tempMarker = null;
-    map.on('click', (e) => {
-      const { lat, lng } = e.latlng;
+    function handleMapClick(latlng, zone = null) {
+      const { lat, lng } = latlng;
       if (isMeasuring) {
         measurePoints.push([lat, lng]);
         measureLine.setLatLngs(measurePoints);
@@ -1484,16 +1491,29 @@
       const naviUrl = `https://gbank.gsj.jp/seamless/v2/viewer/?lat=${lat.toFixed(5)}&lng=${lng.toFixed(5)}&z=14`;
 
       tempMarker = L.marker([lat, lng]).addTo(map);
+
+      let headerHtml = `<h4 style="margin:0 0 3px;">📍 選択地点</h4>`;
+      if (zone) {
+        headerHtml = `
+          <div style="font-size:10px; color:${zone.color}; font-weight:bold; margin-bottom:2px;">🔥 エリア内: ${zone.name}</div>
+          <h4 style="margin:0 0 3px; color:#2c3e50;">📍 選択地点（${zone.badge}）</h4>
+        `;
+      }
+
       tempMarker.bindPopup(`
-        <div style="font-size:11.5px;">
-          <h4 style="margin:0 0 3px;">📍 選択地点</h4>
-          <div>${formatCoord(lat)}, ${formatCoord(lng)}</div>
-          <div class="btn-row">
+        <div style="font-size:11.5px; min-width:180px;">
+          ${headerHtml}
+          <div style="font-size:10px; color:#666;">${formatCoord(lat)}, ${formatCoord(lng)}</div>
+          <div class="btn-row" style="margin-top:6px;">
             <button class="btn-act" style="background:#2e7d32;" onclick="openModal('logModal')">💎 採集ログ</button>
             <a href="${naviUrl}" target="_blank" class="btn-act" style="background:#1565c0; text-decoration:none;">公式詳細 ↗</a>
           </div>
         </div>
       `).openPopup();
+    }
+
+    map.on('click', (e) => {
+      handleMapClick(e.latlng, null);
     });
 
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
@@ -1649,14 +1669,37 @@
       updateCacheCount();
     });
 
-    // 16. GPS
+    // 16. GPS（単一管理＆無限増殖バグ解消版）
+    let currentLocationMarker = null;
     document.getElementById('gpsBtn').addEventListener('click', () => {
       if (!navigator.geolocation) return alert('GPS非対応');
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude } = pos.coords;
           map.setView([latitude, longitude], 15);
-          L.circleMarker([latitude, longitude], { radius: 8, color: '#ff5722', fillOpacity: 0.8 }).addTo(map).bindPopup('現在地').openPopup();
+          
+          if (currentLocationMarker) {
+            map.removeLayer(currentLocationMarker);
+          }
+          
+          currentLocationMarker = L.circleMarker([latitude, longitude], {
+            radius: 8,
+            color: '#ffffff',
+            fillColor: '#ff5722',
+            fillOpacity: 0.95,
+            weight: 2.5
+          }).addTo(map);
+
+          currentLocationMarker.bindPopup(`
+            <div style="font-size:11.5px; min-width:160px;">
+              <h4 style="margin:0 0 3px; color:#ff5722;">📍 現在地</h4>
+              <div style="font-size:10px; color:#666;">${formatCoord(latitude)}, ${formatCoord(longitude)}</div>
+              <div class="btn-row" style="margin-top:6px;">
+                <button class="btn-act" style="background:#2e7d32;" onclick="selectedLatLng={lat:${latitude},lng:${longitude}}; openModal('logModal');">💎 現在地で記録</button>
+              </div>
+            </div>
+          `).openPopup();
+
           updateSunAndTide(latitude, longitude);
         },
         (err) => alert('現在地取得失敗: ' + err.message)
