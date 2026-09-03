@@ -983,14 +983,37 @@
       updateCacheCount();
     });
 
-    // 13. GPS
+    // 13. GPS（単一管理＆現在地記録ボタン付き）
+    let currentLocationMarker = null;
     document.getElementById('gpsBtn').addEventListener('click', () => {
       if (!navigator.geolocation) return alert('GPS非対応');
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude } = pos.coords;
           map.setView([latitude, longitude], 15);
-          L.circleMarker([latitude, longitude], { radius: 8, color: '#ff5722', fillOpacity: 0.8 }).addTo(map).bindPopup('現在地').openPopup();
+          
+          if (currentLocationMarker) {
+            map.removeLayer(currentLocationMarker);
+          }
+          
+          currentLocationMarker = L.circleMarker([latitude, longitude], {
+            radius: 8,
+            color: '#ffffff',
+            fillColor: '#ff5722',
+            fillOpacity: 0.95,
+            weight: 2.5
+          }).addTo(map);
+
+          currentLocationMarker.bindPopup(`
+            <div style="font-size:11.5px; min-width:160px;">
+              <h4 style="margin:0 0 3px; color:#ff5722;">📍 現在地</h4>
+              <div style="font-size:10px; color:#666;">${latitude.toFixed(4)}, ${longitude.toFixed(4)}</div>
+              <div class="btn-row" style="margin-top:6px;">
+                <button class="btn-act" style="background:#2e7d32;" onclick="selectedLatLng={lat:${latitude},lng:${longitude}}; openModal('logModal');">💎 現在地で記録</button>
+              </div>
+            </div>
+          `).openPopup();
+
           updateSunAndTide(latitude, longitude);
         },
         (err) => alert('現在地取得失敗: ' + err.message)
